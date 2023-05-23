@@ -1,0 +1,5 @@
+/.vs
+/x64/Release/logs/
+/x64/Debug/
+/yellow-watcher/yellow-watcher/x64/
+x64/Release/settings.json
