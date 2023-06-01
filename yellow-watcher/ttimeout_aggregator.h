@@ -24,6 +24,20 @@ struct EventTtimeout {
     std::string context;
 };
 
+struct EventTdeadlock {
+    std::uint64_t time_event_;
+    std::string name_;
+    std::string computer_;
+    std::string base_;
+    std::string session_;
+    std::string hesh_last_string_context;
+    std::string hesh_context_;
+    std::string wait_connections_;
+    std::string usr_;
+    std::string last_string_context;
+    std::string context;
+};
+
 class ContextAgregator {
     std::uint32_t count_ = 0;
     std::unordered_map<std::string, std::uint32_t> agreagator_;
@@ -62,6 +76,20 @@ public:
     void Add(const tm& time, const EventData& event_data);
     void Delete(uint64_t minute);
     void ClearEvents() { events_ttimeout_.clear(); }
+    std::string ToJson();
+    std::string ToJson(uint64_t time);
+};
+
+class TdeadlockAggregator {
+    std::unordered_map<std::uint64_t, DatabaseContextAgregator> agreagator_;
+    std::vector<EventTdeadlock> events_tdeadlock_;
+    void AddStatistics(std::uint64_t minute, const EventData& event_data);
+    void AddEventTdeadlock(std::uint64_t time_event, const EventData& event_data);
+    std::stringstream ss_;
+public:
+    void Add(const tm& time, const EventData& event_data);
+    void Delete(uint64_t minute);
+    void ClearEvents() { events_tdeadlock_.clear(); }
     std::string ToJson();
     std::string ToJson(uint64_t time);
 };

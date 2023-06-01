@@ -53,7 +53,8 @@ class EventData {
     // 4 - SessionID
     // 5 - WaitConnections
     // 6 - Usr
-    std::array<bool, 7> is_key_index_;
+    // 7 - DeadlockConnectionIntersections
+    std::array<bool, 8> is_key_index_;
     // Массив для хранения индекса конкретного свойства в values_
     // 0 - Context
     // 1 - Sql
@@ -62,7 +63,8 @@ class EventData {
     // 4 - SessionID
     // 5 - WaitConnections
     // 6 - Usr
-    std::array<std::uint64_t, 7> key_index_;   
+    // 7 - DeadlockConnectionIntersections
+    std::array<std::uint64_t, 8> key_index_;   
 
     void EndValue();
     const std::string* GetProperty(std::uint64_t) const;
@@ -102,6 +104,7 @@ public:
     const std::string* GetSession() const { return GetProperty(4); }
     const std::string* GetWaitConnections() const { return GetProperty(5); }
     const std::string* GetUsr() const { return GetProperty(6); }
+    const std::string* GetDeadlockConnectionIntersections() const { return GetProperty(7); }
 };
 
 class Parser {

@@ -41,6 +41,25 @@ string ComputeSHA256(stringstream& ss, const string& str) {
 	return hash_string;
 }
 
+string WaitConnectionFromDeadlockConnectionIntersections(const string& str) {
+	string_view sv(str);
+	auto pos = sv.find(" ");
+	if (pos != string_view::npos) {
+		sv.remove_prefix(pos + 1);
+		pos = sv.find(" ");
+		if (pos != string_view::npos) {
+			sv.remove_suffix(sv.size() - pos);
+			return string(sv);
+		}
+		else {
+			return "";
+		}
+	}
+	else {
+		return "";
+	}
+}
+
 void ContextAgregator::Add(const EventData& event_data) {
 	++count_;
 	auto it = agreagator_.insert({ *event_data.GetContext(), {} });
@@ -157,10 +176,10 @@ void TtimeoutAggregator::Delete(uint64_t minute) {
 	agreagator_.extract(minute);
 }
 
-boost::json::object JsonInit() {
+boost::json::object JsonInit(string event_type) {
 	namespace json = boost::json;
 	json::object j_object;
-	j_object.emplace("event_type", "TTIMEOUT");
+	j_object.emplace("event_type", event_type);
 	
 	json::array j_rows;
 	j_object.emplace("events_stat", j_rows);
@@ -179,7 +198,7 @@ void JsonAddRowStat(boost::json::array* j_rows, uint64_t time, const DatabaseCon
 	j_rows->emplace_back(j_row);
 }
 
-void JsonAddRows(vector<EventTtimeout>& events_ttimeout_, boost::json::object* j_events_ttimeout) {
+void JsonAddRowsTtimeout(vector<EventTtimeout>& events_ttimeout_, boost::json::object* j_events_ttimeout) {
 	namespace json = boost::json;
 
 	json::array j_events_ttimeout_columns;
@@ -217,9 +236,47 @@ void JsonAddRows(vector<EventTtimeout>& events_ttimeout_, boost::json::object* j
 	j_events_ttimeout->emplace("rows", j_events_ttimeout_rows);
 }
 
+void JsonAddRowsTdeadlock(vector<EventTdeadlock>& events_tdeadlock_, boost::json::object* j_events_tdeadlock) {
+	namespace json = boost::json;
+
+	json::array j_events_tdeadlock_columns;
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "time");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "microseconds");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "name");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "computer");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "base");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "session");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "hesh_last_string_context");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "hesh_context");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "wait_connections");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "usr");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "last_string_context");
+	j_events_tdeadlock_columns.emplace(j_events_tdeadlock_columns.end(), "context");
+	j_events_tdeadlock->emplace("columns", j_events_tdeadlock_columns);
+
+	json::array j_events_ttimeout_rows;
+	for (auto it = events_tdeadlock_.begin(); it != events_tdeadlock_.end(); ++it) {
+		json::array j_event_ttimeout;
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), ToString(it->time_event_));
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->time_event_ % 1000000);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->name_);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->computer_);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->base_);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->session_);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->hesh_last_string_context);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->hesh_context_);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->wait_connections_);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->usr_);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->last_string_context);
+		j_event_ttimeout.emplace(j_event_ttimeout.end(), it->context);
+		j_events_ttimeout_rows.emplace(j_events_ttimeout_rows.end(), j_event_ttimeout);
+	}
+	j_events_tdeadlock->emplace("rows", j_events_ttimeout_rows);
+}
+
 string TtimeoutAggregator::ToJson() {
 	namespace json = boost::json;
-	json::object j_object = JsonInit();
+	json::object j_object = JsonInit("TTIMEOUT");
 	
 	json::array& j_rows = j_object.find("events_stat")->value().as_array();
 	for (auto it = agreagator_.begin(); it != agreagator_.end(); ++it) {
@@ -227,14 +284,14 @@ string TtimeoutAggregator::ToJson() {
 	}
 
 	json::object& j_events_ttimeout = j_object.find("events")->value().as_object();
-	JsonAddRows(events_ttimeout_, &j_events_ttimeout);
+	JsonAddRowsTtimeout(events_ttimeout_, &j_events_ttimeout);
 
 	return json::serialize(j_object);
 }
 
 string TtimeoutAggregator::ToJson(uint64_t time) {
 	namespace json = boost::json;
-	json::object j_object = JsonInit();
+	json::object j_object = JsonInit("TTIMEOUT");
 
 	json::array& j_rows = j_object.find("events_stat")->value().as_array();
 	auto it = agreagator_.find(time);
@@ -243,7 +300,73 @@ string TtimeoutAggregator::ToJson(uint64_t time) {
 	}
 
 	json::object& j_events_ttimeout = j_object.find("events")->value().as_object();
-	JsonAddRows(events_ttimeout_, &j_events_ttimeout);
+	JsonAddRowsTtimeout(events_ttimeout_, &j_events_ttimeout);
+
+	return json::serialize(j_object);
+}
+
+void TdeadlockAggregator::Add(const tm& time, const EventData& event_data) {
+	uint64_t time_event = ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event_data.Minute(), event_data.Second(), event_data.Msecond());
+	uint64_t time_minute_event = ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event_data.Minute());
+	AddStatistics(time_minute_event, event_data);
+	AddEventTdeadlock(time_event, event_data);
+}
+
+void TdeadlockAggregator::AddStatistics(std::uint64_t time_minute_event, const EventData& event_data) {
+	auto it = agreagator_.insert({ time_minute_event, {} });
+	it.first->second.Add(event_data);
+}
+
+void TdeadlockAggregator::AddEventTdeadlock(std::uint64_t time_event, const EventData& event_data) {
+	string last_string_context(LastStringContext(*event_data.GetContext()));
+	EventTdeadlock event_tdeadlock = {
+		time_event,
+		event_data.Name(),
+		*event_data.GetComputer(),
+		*event_data.GetDatabase(),
+		*event_data.GetSession(),
+		ComputeSHA256(ss_, last_string_context),
+		ComputeSHA256(ss_, *event_data.GetContext()),
+		WaitConnectionFromDeadlockConnectionIntersections(*event_data.GetDeadlockConnectionIntersections()),
+		*event_data.GetUsr(),
+		move(last_string_context),
+		*event_data.GetContext()
+	};
+
+	events_tdeadlock_.push_back(move(event_tdeadlock));
+}
+
+void TdeadlockAggregator::Delete(uint64_t minute) {
+	agreagator_.extract(minute);
+}
+
+string TdeadlockAggregator::ToJson() {
+	namespace json = boost::json;
+	json::object j_object = JsonInit("TDEADLOCK");
+
+	json::array& j_rows = j_object.find("events_stat")->value().as_array();
+	for (auto it = agreagator_.begin(); it != agreagator_.end(); ++it) {
+		JsonAddRowStat(&j_rows, it->first, it->second);
+	}
+
+	json::object& j_events_ttimeout = j_object.find("events")->value().as_object();
+	JsonAddRowsTdeadlock(events_tdeadlock_, &j_events_ttimeout);
+
+	return json::serialize(j_object);
+}
+
+string TdeadlockAggregator::ToJson(uint64_t time) {
+	namespace json = boost::json;
+	json::object j_object = JsonInit("TDEADLOCK");
+
+	json::array& j_rows = j_object.find("events_stat")->value().as_array();
+	auto it = agreagator_.find(time);
+	if (it != agreagator_.end()) {
+		JsonAddRowStat(&j_rows, it->first, it->second);
+	}
+
+	json::object& j_events_ttimeout = j_object.find("events")->value().as_object();
+	JsonAddRowsTdeadlock(events_tdeadlock_, &j_events_ttimeout);
 
 	return json::serialize(j_object);
 }

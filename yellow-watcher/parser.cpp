@@ -15,8 +15,8 @@ EventData::EventData() :
     level_(0),
     key_temp_(""),
     value_temp_(""),
-    is_key_index_({ false, false, false, false, false, false }),
-    key_index_({ 0, 0, 0, 0, 0, 0 })
+    is_key_index_({ false, false, false, false, false, false, false, false }),
+    key_index_({ 0, 0, 0, 0, 0, 0, 0, 0 })
 
 {}
 
@@ -149,6 +149,10 @@ void EventData::EndValue() {
     else if (key_temp_ == "Usr") {
         is_key_index_[6] = true;
         key_index_[6] = values_.size();
+    }
+    else if (key_temp_ == "DeadlockConnectionIntersections") {
+        is_key_index_[7] = true;
+        key_index_[7] = values_.size();
     }
 
     if (value_temp_.back() == '\r') {

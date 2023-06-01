@@ -30,7 +30,7 @@ VOID WINAPI ServiceCtrlHandler(DWORD);
 DWORD WINAPI WorkerThread(LPVOID lpParam);
 
 wchar_t SERVICE_NAME[100] = L"Yellow Watcher Service";
-static const std::wstring VERSION = L"1.2";
+static const std::wstring VERSION = L"1.3";
 
 //TODO Delete
 void RunConsole_old(Settings& settings);
@@ -160,6 +160,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
         DirectoryWatcher dw(Utf8ToWideChar(settings.TechLogsPath()));
         dw.Init();
         TtimeoutAggregator ttimeout_aggregator;
+        TdeadlockAggregator tdeadlock_aggregator;
         Sender sender(settings.Server(), settings.Port(), settings.User(), settings.Password());
 
         DWORD res;
@@ -176,6 +177,12 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                 sender.Send(settings.Target(), tmp);
                 ttimeout_aggregator.Delete(event_time);
                 ttimeout_aggregator.ClearEvents();
+
+                tmp = tdeadlock_aggregator.ToJson(event_time);
+                sender.Send(settings.Target(), tmp);
+                tdeadlock_aggregator.Delete(event_time);
+                tdeadlock_aggregator.ClearEvents();
+
                 LOGGER->NewFileWithLock();
 
                 prevMinute = nowMinute;
@@ -185,6 +192,9 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
             for (auto it = dw.GetEvents().begin(); it != dw.GetEvents().end(); ++it) {
                 if (it->second.Name() == "TTIMEOUT") {
                     ttimeout_aggregator.Add(it->first, it->second);
+                }
+                else if (it->second.Name() == "TDEADLOCK") {
+                    tdeadlock_aggregator.Add(it->first, it->second);
                 }
                 if (LOGGER->LogType() == Logger::Type::Trace) {
                     std::string msg(it->second.Name());
