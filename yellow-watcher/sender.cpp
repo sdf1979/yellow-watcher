@@ -108,6 +108,15 @@ void Session::OnRead(beast::error_code ec, std::size_t bytes_transferred) {
     if (ec) {
         return fail(ec, "read");
     }
+    auto res_int = res_.result_int();
+    if (res_int != 200) {
+        std::string msg = "Send via http. Response code received ";
+        msg.append(std::to_string(res_int)).append(".");
+        if (!res_.body().empty()) {
+            msg.append(" ").append(res_.body());
+        }
+        LOGGER->Print(msg, Logger::Type::Error);
+    }
 
     stream_.socket().shutdown(tcp::socket::shutdown_both, ec);
 

@@ -7,10 +7,14 @@ using namespace std;
 DirectoryWatcher::DirectoryWatcher(wstring directory_name) :
     directory_(filesystem::path(directory_name)),
     last_directory_read_(0),
-    DIRECTORY_READ_PERIOD(30) {}
+    DIRECTORY_READ_PERIOD(35),
+    reader_(nullptr),
+    parser_(nullptr),
+    read_bytes_(0)
+{}
 
 void DirectoryWatcher::Init() {
-    ReadDirectory();
+    ReadDirectory(true);
     for (auto it = files_.begin(); it != files_.end(); ++it) {
         if (it->first->Open()) {
             it->first->FindStartPosition();
@@ -20,18 +24,18 @@ void DirectoryWatcher::Init() {
     ClearEvents();
 }
 
-void DirectoryWatcher::ExecuteStep() {
-    ReadDirectory();
+void DirectoryWatcher::ExecuteStep(bool anyway) {
+    ReadDirectory(anyway);
     ReadFiles();
 }
 
-void DirectoryWatcher::AddFiles(filesystem::path path) {
+void DirectoryWatcher::AddFiles(filesystem::path path, bool check_file_time) {
     time_t cur_time = chrono::system_clock::to_time_t(chrono::system_clock::now());
     wstring file_name = path.wstring();
     auto it = files_search_.find(file_name);
     if (it == files_search_.end()) {
         unique_ptr<Reader> new_file = make_unique<Reader>(file_name, 65535);
-        if (new_file->IsWorkingFile(cur_time)) {
+        if (new_file->IsWorkingFile(cur_time, check_file_time)) {
             files_.push_back({ move(new_file), make_unique<Parser>() });
             files_search_.insert({ file_name, --files_.end() });
             if (LOGGER->LogType() == Logger::Type::Trace) {
@@ -56,13 +60,13 @@ void DirectoryWatcher::DeleteFiles(const vector<list<File>::iterator>& not_worki
     }
 }
 
-void DirectoryWatcher::ReadDirectory() {
+void DirectoryWatcher::ReadDirectory(bool anyway, bool check_file_time) {
     time_t cur_time = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    if (cur_time - last_directory_read_ > DIRECTORY_READ_PERIOD) {
+    if (anyway || cur_time - last_directory_read_ > DIRECTORY_READ_PERIOD) {
         try {
             for (const std::filesystem::directory_entry& dir : filesystem::recursive_directory_iterator(directory_)) {
                 if (dir.is_regular_file() && dir.path().extension() == ".log") {
-                    AddFiles(dir);
+                    AddFiles(dir, check_file_time);
                 }
             }
         }
@@ -75,39 +79,94 @@ void DirectoryWatcher::ReadDirectory() {
     }
 }
 
-void DirectoryWatcher::ReadFiles() {
+void DirectoryWatcher::ReadFiles(bool check_file_time) {
     time_t cur_time = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
+    read_bytes_ = 0;
     vector<list<File>::iterator> not_working_files;
 
     for (list<File>::iterator it = files_.begin(); it != files_.end(); ++it) {
-        Reader* reader = it->first.get();
-        Parser* parser = it->second.get();
-        if (reader->Open()) {
-            if (reader->Read()) {
-                while (reader->Next()) {
-                    auto buffer = reader->GetBuffer();
-                    parser->Parse(buffer.first, buffer.second);
-                    vector<EventData> events_temp = parser->MoveEvents();
-                    for (auto it = events_temp.begin(); it != events_temp.end(); ++it) {
-                        events_.push_back({ reader->FileTime(), move(*it) });
+        reader_ = it->first.get();
+        parser_ = it->second.get();
+        if (reader_->Open()) {
+            if (reader_->Read()) {
+                while (reader_->Next()) {
+                    buffer_ = reader_->GetBuffer();
+                    read_bytes_ += buffer_.second;
+                    parser_->Parse(buffer_.first, buffer_.second);
+                    events_temp_ = parser_->MoveEvents();
+                    for (auto it = events_temp_.begin(); it != events_temp_.end(); ++it) {
+                        events_.push_back({ reader_->FileTime(), move(*it) });
                     }
-                    reader->ClearBuffer();
+                    reader_->ClearBuffer();
                 }
             }
         }
-        if (!it->first.get()->IsWorkingFile(cur_time)) {
+        if (!it->first.get()->IsWorkingFile(cur_time, check_file_time)) {
             not_working_files.push_back(it);
         }
+        reader_ = nullptr;
+        parser_ = nullptr;
     }
 
     DeleteFiles(not_working_files);
+}
+
+bool DirectoryWatcher::OpenCursor() {
+    it_file_ = files_.begin();
+    return true;
+}
+
+void DirectoryWatcher::CloseCursor() {
+    reader_ = nullptr;
+    parser_ = nullptr;
+}
+
+bool DirectoryWatcher::ReadNext(std::size_t count) {
+    while (events_temp_.size() && it_event_temp_ != events_temp_.end()) {
+        events_.push_back({ reader_->FileTime(), move(*it_event_temp_) });
+        ++it_event_temp_;
+        if (events_.size() >= count) return true;
+    }
+    while (it_file_ != files_.end()) {
+        if (!reader_ && !parser_) {
+            reader_ = it_file_->first.get();
+            parser_ = it_file_->second.get();
+            reader_->Open();
+            reader_->Read();
+        }
+        while (reader_ && reader_->Next()) {
+            buffer_ = reader_->GetBuffer();
+            parser_->Parse(buffer_.first, buffer_.second);
+            events_temp_ = parser_->MoveEvents();
+            reader_->ClearBuffer();
+            it_event_temp_ = events_temp_.begin();
+            while (it_event_temp_ != events_temp_.end()) {
+                events_.push_back({ reader_->FileTime(), move(*it_event_temp_) });
+                ++it_event_temp_;
+                if (events_.size() >= count) return true;
+            }
+        }
+        reader_->Close();
+        reader_ = nullptr;
+        parser_ = nullptr;
+        ++it_file_;
+    }
+    return events_.size();
 }
 
 const vector<pair<std::tm, EventData>>& DirectoryWatcher::GetEvents() const {
     return events_;
 }
 
+vector<pair<std::tm, EventData>> DirectoryWatcher::MoveEvents() {
+    return move(events_);
+}
+
 void DirectoryWatcher::ClearEvents() {
     events_.clear();
+}
+
+std::int64_t DirectoryWatcher::ReadBytes() {
+    return read_bytes_;
 }

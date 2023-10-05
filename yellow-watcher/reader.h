@@ -48,7 +48,7 @@ public:
     bool Read();
     bool Read(char* ch, std::uint64_t start, std::uint64_t size);
     bool Next();
-    bool IsWorkingFile(time_t cur_time);
+    bool IsWorkingFile(time_t cur_time, bool check_file_time);
     std::uint64_t GetFileSize();
     const std::wstring& GetFileName();
     std::pair<const char*, int> GetBuffer();

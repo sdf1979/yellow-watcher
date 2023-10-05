@@ -64,4 +64,5 @@ public:
     void SetOutConsole(bool out_console);
     void SetLogType(Type type) { minimum_type_ = type; }
     Type LogType() { return minimum_type_; }
+    bool IsTrace() { return minimum_type_ == Logger::Type::Trace; }
 };

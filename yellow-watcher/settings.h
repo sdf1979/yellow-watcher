@@ -28,5 +28,6 @@ public:
 	std::string User() { return user; }
 	std::string Password() { return password; }
 	std::string TechLogsPath() { return tech_logs_path; }
+	void SetTechLogsPath(std::string path) { tech_logs_path = path; }
 	int LogStorageDuration() { return log_storage_duration; }
 };

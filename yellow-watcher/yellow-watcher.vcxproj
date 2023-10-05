@@ -151,7 +151,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="encoding_string.cpp" />
+    <ClCompile Include="event_tech_log.cpp" />
+    <ClCompile Include="functions.cpp" />
     <ClCompile Include="logger.cpp" />
+    <ClCompile Include="objects_event.cpp" />
     <ClCompile Include="parser.cpp" />
     <ClCompile Include="reader.cpp" />
     <ClCompile Include="sender.cpp" />
@@ -159,12 +162,16 @@
     <ClCompile Include="directory_watcher.cpp" />
     <ClCompile Include="time.cpp" />
     <ClCompile Include="timer_perf.cpp" />
-    <ClCompile Include="ttimeout_aggregator.cpp" />
     <ClCompile Include="yellow-watcher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="directory_watcher.h" />
     <ClInclude Include="encoding_string.h" />
+    <ClInclude Include="event_accumulator.h" />
+    <ClInclude Include="event_aggregator.h" />
+    <ClInclude Include="event_tech_log.h" />
+    <ClInclude Include="functions.h" />
+    <ClInclude Include="objects_event.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="logger.h" />
     <ClInclude Include="parser.h" />
@@ -173,7 +180,6 @@
     <ClInclude Include="sender.h" />
     <ClInclude Include="settings.h" />
     <ClInclude Include="timer_perf.h" />
-    <ClInclude Include="ttimeout_aggregator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

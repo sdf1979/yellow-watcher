@@ -33,9 +33,6 @@
     <ClCompile Include="timer_perf.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ttimeout_aggregator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="sender.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -46,6 +43,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="time.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="event_tech_log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="functions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="objects_event.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -68,9 +74,6 @@
     <ClInclude Include="timer_perf.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="ttimeout_aggregator.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="sender.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -81,6 +84,21 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="time.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="event_aggregator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="event_tech_log.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="event_accumulator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="functions.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="objects_event.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

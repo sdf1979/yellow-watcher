@@ -8,6 +8,7 @@ namespace opt = boost::program_options;
 
 class ProgrammOptions {
 	std::wstring mode;
+	std::wstring path;
 	std::wstring log_level;
 	std::wstring help;
 	bool is_help;
@@ -15,8 +16,18 @@ class ProgrammOptions {
 public:
 	ProgrammOptions(int argc, wchar_t* argv[]) {
 		opt::options_description desc("All options");
+		std::string mode_str("launch mode");
+		mode_str
+			.append(" (")
+			.append("console - launch in the console")
+			.append(", analysis - perform a complete analysis of all files")
+			.append(", install - install the 'Yellow Watcher Service'")
+			.append(", uninstall - remove the 'Yellow Watcher Service'")
+			.append(")");
+
 		desc.add_options()
-			("mode,M", opt::wvalue<std::wstring>(&mode), "launch mode (console - launch in the console, install - install the 'Yellow Watcher Service', uninstall - remove the 'Yellow Watcher Service')")
+			("mode,M", opt::wvalue<std::wstring>(&mode), mode_str.c_str())
+			("path,P", opt::wvalue<std::wstring>(&path), "directory with technological log files, takes precedence over the 'logs_path' parameter in the 'settings.json' file")
 			("log,L", opt::wvalue<std::wstring>(&log_level)->default_value(L"error", "error"), "minimum level of logging (possible values ascending: trace, info, error)")
 			("help,H", "produce help message")
 			("version,V", "version");
@@ -37,6 +48,7 @@ public:
 		}		
 	}
 	const std::wstring& Mode() { return mode; }
+	const std::wstring& Path() { return path; }
 	const std::wstring& LogLevel() { return log_level; }
 	const std::wstring& Help() { return help; }
 	bool IsHelp() { return is_help; }

@@ -46,25 +46,35 @@ class EventData {
     std::string empty_string_;
 
     // Массив для хранения наличия конкретного свойства
-    // 0 - Context
-    // 1 - Sql
-    // 2 - DataBase
-    // 3 - t:computerName
-    // 4 - SessionID
-    // 5 - WaitConnections
-    // 6 - Usr
-    // 7 - DeadlockConnectionIntersections
-    std::array<bool, 8> is_key_index_;
+    // 0  - Context
+    // 1  - Sql
+    // 2  - DataBase
+    // 3  - t:computerName
+    // 4  - SessionID
+    // 5  - WaitConnections
+    // 6  - Usr
+    // 7  - DeadlockConnectionIntersections
+    // 8  - Rows
+    // 9  - RowsAffected
+    // 10 - planSQLText
+    // 11 - Func
+    // 12 - Regions
+    std::array<bool, 13> is_key_index_;
     // Массив для хранения индекса конкретного свойства в values_
-    // 0 - Context
-    // 1 - Sql
-    // 2 - DataBase
-    // 3 - t:computerName
-    // 4 - SessionID
-    // 5 - WaitConnections
-    // 6 - Usr
-    // 7 - DeadlockConnectionIntersections
-    std::array<std::uint64_t, 8> key_index_;   
+    // 0  - Context
+    // 1  - Sql
+    // 2  - DataBase
+    // 3  - t:computerName
+    // 4  - SessionID
+    // 5  - WaitConnections
+    // 6  - Usr
+    // 7  - DeadlockConnectionIntersections
+    // 8  - Rows
+    // 9  - RowsAffected
+    // 10 - planSQLText
+    // 11 - Func
+    // 12 - Regions
+    std::array<std::uint64_t, 13> key_index_;   
 
     void EndValue();
     const std::string* GetProperty(std::uint64_t) const;
@@ -105,6 +115,11 @@ public:
     const std::string* GetWaitConnections() const { return GetProperty(5); }
     const std::string* GetUsr() const { return GetProperty(6); }
     const std::string* GetDeadlockConnectionIntersections() const { return GetProperty(7); }
+    const std::string* GetRow() const { return GetProperty(8); }
+    const std::string* GetRowsAffected() const { return GetProperty(9); }
+    const std::string* GetplanSQLText() const { return GetProperty(10); }
+    const std::string* GetFunc() const { return GetProperty(11); }
+    const std::string* GetRegions() const { return GetProperty(12); }
 };
 
 class Parser {

@@ -4,6 +4,7 @@ using namespace std;
 
 string_view LastStringContext(const string& str) {
 	string_view sv(str);
+	if (sv.empty()) return sv;
 	auto pos = str.rfind('\n');
 	if (pos != str.npos) {
 		sv.remove_prefix(pos + 1);

@@ -144,6 +144,7 @@ uint64_t Reader::GetFileSize() {
     else {
         string msg("Can not open the file \'");
         msg.append(WideCharToUtf8(file_name_)).append("\'");
+        return 0;
     }
 }
 
@@ -206,12 +207,15 @@ bool Reader::Next() {
     return size_read_;
 }
 
-bool Reader::IsWorkingFile(time_t cur_time) {
+bool Reader::IsWorkingFile(time_t cur_time, bool check_file_time) {
     uint64_t size = GetFileSize();
     if (size <= 3) {
         return false;
-    }    
-    return cur_time - std::mktime(&file_time_) <= MAX_FILE__PROCESSING_TIME;
+    }
+    if (check_file_time) {
+        return cur_time - std::mktime(&file_time_) <= MAX_FILE__PROCESSING_TIME;
+    }
+    return true;
 }
 
 const wstring& Reader::GetFileName() {

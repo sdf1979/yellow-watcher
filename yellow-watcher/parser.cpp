@@ -15,8 +15,8 @@ EventData::EventData() :
     level_(0),
     key_temp_(""),
     value_temp_(""),
-    is_key_index_({ false, false, false, false, false, false, false, false }),
-    key_index_({ 0, 0, 0, 0, 0, 0, 0, 0 })
+    is_key_index_({ false, false, false, false, false, false, false, false, false, false, false, false, false }),
+    key_index_({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 })
 
 {}
 
@@ -42,8 +42,8 @@ EventData::EventData(EventData&& event_data) noexcept :
     event_data.msecond_ = 0;
     event_data.duration_ = 0;
     event_data.level_ = 0;
-    event_data.is_key_index_ = { false, false };
-    event_data.key_index_ = { 0, 0 };
+    event_data.is_key_index_ = { false, false, false, false, false, false, false, false, false, false, false, false, false };
+    event_data.key_index_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 }
 
 EventData& EventData::operator=(EventData&& event_data) noexcept {
@@ -70,8 +70,8 @@ EventData& EventData::operator=(EventData&& event_data) noexcept {
     event_data.msecond_ = 0;
     event_data.duration_ = 0;
     event_data.level_ = 0;
-    event_data.is_key_index_ = { false, false };
-    event_data.key_index_ = { 0, 0 };
+    event_data.is_key_index_ = { false, false, false, false, false, false, false, false, false, false, false, false, false };
+    event_data.key_index_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         
     return *this;
 }
@@ -153,6 +153,26 @@ void EventData::EndValue() {
     else if (key_temp_ == "DeadlockConnectionIntersections") {
         is_key_index_[7] = true;
         key_index_[7] = values_.size();
+    }
+    else if (key_temp_ == "Rows") {
+        is_key_index_[8] = true;
+        key_index_[8] = values_.size();
+    }
+    else if (key_temp_ == "RowsAffected") {
+        is_key_index_[9] = true;
+        key_index_[9] = values_.size();
+    }
+    else if (key_temp_ == "planSQLText") {
+        is_key_index_[10] = true;
+        key_index_[10] = values_.size();
+    }
+    else if (key_temp_ == "Func") {
+        is_key_index_[11] = true;
+        key_index_[11] = values_.size();
+    }
+    else if (key_temp_ == "Regions") {
+        is_key_index_[12] = true;
+        key_index_[12] = values_.size();
     }
 
     if (value_temp_.back() == '\r') {

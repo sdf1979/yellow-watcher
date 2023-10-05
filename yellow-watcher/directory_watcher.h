@@ -17,15 +17,26 @@ class DirectoryWatcher {
     time_t last_directory_read_;
     const time_t DIRECTORY_READ_PERIOD;
     std::vector<std::pair<std::tm, EventData>> events_;
-
-    void AddFiles(std::filesystem::path path);
+    void AddFiles(std::filesystem::path path, bool check_file_time);
     void DeleteFiles(const std::vector<std::list<File>::iterator>& not_working_files);
-    void ReadDirectory();
-    void ReadFiles();
+    std::list<File>::iterator it_file_;
+    std::vector<EventData>::iterator it_event_temp_;
+    Reader* reader_;
+    Parser* parser_;
+    std::pair<const char*, int> buffer_;
+    std::vector<EventData> events_temp_;
+    std::int64_t read_bytes_;
 public:
     DirectoryWatcher(std::wstring directory_name);
     void Init();
-    void ExecuteStep();
+    void ExecuteStep(bool anyway);
+    void ReadDirectory(bool anyway, bool check_file_time = true);
+    void ReadFiles(bool check_file_time = true);
+    bool OpenCursor();
+    void CloseCursor();
+    bool ReadNext(std::size_t count = 1000);
     const std::vector<std::pair<std::tm, EventData>>& GetEvents() const;
+    std::vector<std::pair<std::tm, EventData>> MoveEvents();
     void ClearEvents();
+    std::int64_t ReadBytes();
 };
