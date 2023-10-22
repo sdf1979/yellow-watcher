@@ -47,4 +47,27 @@ namespace TechLogOneC {
 		boost::json::array ValueNames() const;
 	};
 	Measurment& operator+=(Measurment& lhs, const Measurment& rhs);
+
+	struct LongRequestEvent {
+		std::uint64_t time_ = 0;
+		std::uint64_t duration_ = 0;
+		std::uint64_t dbpid_ = 0;
+		std::uint64_t rows_ = 0;
+		std::uint64_t rows_affected_ = 0;
+		std::uint64_t rows_processed_ = 0;
+		double estimate_rows_processed_ = 0.0;
+		double data_size_ = 0.0;
+		double estimate_data_size_ = 0.0;
+		std::string data_base_;
+		std::string computer_;
+		std::string session_id_;
+		std::string user_;
+		std::string last_string_context_;
+		std::string context_;
+		std::string sql_text_;
+		std::string sql_text_hash_;
+		std::string sql_plan_text_;
+		static boost::json::array Columns();
+		boost::json::array ToJsonArray(std::stringstream& ss);
+	};
 }

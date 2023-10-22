@@ -12,7 +12,8 @@ void Settings::CreateSettings(const fs::path& file_path) {
     "service_path": "http://server:port/base_name/hs/IntegrationService/LoadManagedLocks",
     "user": "",
     "password": "",
-    "log_storage_duration_in_hours" : 24
+    "log_storage_duration_in_hours" : 24,
+    "duration_long_request" : 3000000
 })";
         ofstream out(file_path);
         out << json;
@@ -50,6 +51,22 @@ bool ReadValue(json::object* j_object, int& value, const char* key) {
     if (it != j_object->cend()) {
         if (it->value().if_int64()) {
             value = static_cast<int>(it->value().as_int64());
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        return false;
+    }
+}
+
+bool ReadValue(json::object* j_object, uint64_t& value, const char* key) {
+    json::object::iterator it = j_object->find(key);
+    if (it != j_object->cend()) {
+        if (it->value().if_int64()) {
+            value = static_cast<uint64_t>(it->value().as_int64());
             return true;
         }
         else {
@@ -127,6 +144,7 @@ bool Settings::Read(fs::path dir) {
             is_correct = ReadValue(j_object, user, "user") && is_correct;
             is_correct = ReadValue(j_object, password, "password") && is_correct;
             is_correct = ReadValue(j_object, log_storage_duration, "log_storage_duration_in_hours") && is_correct;
+            is_correct = ReadValue(j_object, duration_long_request, "duration_long_request") && is_correct;
             if(is_correct) ParseServicePath();
             return is_correct;            
         }

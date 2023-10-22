@@ -18,6 +18,7 @@ class Settings {
 	std::string port;
 	std::string target;
 	int log_storage_duration;
+	std::uint64_t duration_long_request;
 	void CreateSettings(const std::filesystem::path& file_path);
 	void ParseServicePath();
 public:
@@ -30,4 +31,5 @@ public:
 	std::string TechLogsPath() { return tech_logs_path; }
 	void SetTechLogsPath(std::string path) { tech_logs_path = path; }
 	int LogStorageDuration() { return log_storage_duration; }
+	std::uint64_t DurationLongRequest() { return duration_long_request; }
 };

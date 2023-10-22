@@ -32,11 +32,11 @@ namespace TechLogOneC {
 		return accumulator_.empty();
 	}
 
-	boost::json::object EventAccumulator<ManagedLockEvent>::ToJsonObject() {
-
+	template<typename T>
+	boost::json::object EventAccumulator<T>::ToJsonObject() {
 		boost::json::object j_object;
-		j_object.emplace("columns", ManagedLockEvent::Columns());
-		
+		j_object.emplace("columns", T::Columns());
+
 		boost::json::array j_rows;
 		std::stringstream ss;
 		for (auto it = accumulator_.begin(); it != accumulator_.end(); ++it) {
@@ -45,11 +45,6 @@ namespace TechLogOneC {
 		j_object.emplace("rows", j_rows);
 
 		return j_object;
-	}
-
-	template<typename T>
-	boost::json::object EventAccumulator<T>::ToJsonObject() {
-		return {};
 	}
 
 }

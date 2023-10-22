@@ -15,8 +15,8 @@ EventData::EventData() :
     level_(0),
     key_temp_(""),
     value_temp_(""),
-    is_key_index_({ false, false, false, false, false, false, false, false, false, false, false, false, false }),
-    key_index_({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 })
+    is_key_index_({ false, false, false, false, false, false, false, false, false, false, false, false, false, false }),
+    key_index_({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 })
 
 {}
 
@@ -42,8 +42,8 @@ EventData::EventData(EventData&& event_data) noexcept :
     event_data.msecond_ = 0;
     event_data.duration_ = 0;
     event_data.level_ = 0;
-    event_data.is_key_index_ = { false, false, false, false, false, false, false, false, false, false, false, false, false };
-    event_data.key_index_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    event_data.is_key_index_ = { false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+    event_data.key_index_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 }
 
 EventData& EventData::operator=(EventData&& event_data) noexcept {
@@ -70,8 +70,8 @@ EventData& EventData::operator=(EventData&& event_data) noexcept {
     event_data.msecond_ = 0;
     event_data.duration_ = 0;
     event_data.level_ = 0;
-    event_data.is_key_index_ = { false, false, false, false, false, false, false, false, false, false, false, false, false };
-    event_data.key_index_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    event_data.is_key_index_ = { false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+    event_data.key_index_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         
     return *this;
 }
@@ -173,6 +173,10 @@ void EventData::EndValue() {
     else if (key_temp_ == "Regions") {
         is_key_index_[12] = true;
         key_index_[12] = values_.size();
+    }
+    else if (key_temp_ == "dbpid") {
+        is_key_index_[13] = true;
+        key_index_[13] = values_.size();
     }
 
     if (value_temp_.back() == '\r') {

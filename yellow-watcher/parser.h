@@ -59,7 +59,8 @@ class EventData {
     // 10 - planSQLText
     // 11 - Func
     // 12 - Regions
-    std::array<bool, 13> is_key_index_;
+    // 13 - dbpid
+    std::array<bool, 14> is_key_index_;
     // Массив для хранения индекса конкретного свойства в values_
     // 0  - Context
     // 1  - Sql
@@ -74,7 +75,8 @@ class EventData {
     // 10 - planSQLText
     // 11 - Func
     // 12 - Regions
-    std::array<std::uint64_t, 13> key_index_;   
+    // 13 - dbpid
+    std::array<std::uint64_t, 14> key_index_;   
 
     void EndValue();
     const std::string* GetProperty(std::uint64_t) const;
@@ -120,6 +122,7 @@ public:
     const std::string* GetplanSQLText() const { return GetProperty(10); }
     const std::string* GetFunc() const { return GetProperty(11); }
     const std::string* GetRegions() const { return GetProperty(12); }
+    const std::string* GetDbPid() const { return GetProperty(13); }
 };
 
 class Parser {
