@@ -37,7 +37,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParam);
 
 wchar_t SERVICE_NAME[100] = L"Yellow Watcher Service";
 const std::wstring* LOGS_PATH;
-static const std::wstring VERSION = L"1.48";
+static const std::wstring VERSION = L"1.50";
 static const std::string VERSION_STR = WideCharToUtf8(VERSION);
 
 void GetPath();
@@ -329,8 +329,13 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                     std::string last_string_context = TechLogOneC::LastStringContext(event.GetContext());
                     TechLogOneC::PlanTxt plan_txt = TechLogOneC::PlanTxt::Parse(*event.GetplanSQLText());
                     sql_text = event.GetSql();
-                    sql_text_hash = TechLogOneC::SqlHashDbMsSql(sql_text);
-                    if (sql_text->empty()) sql_text = event.GetFunc();
+                    if (!sql_text->empty()) {
+                        sql_text_hash = TechLogOneC::SqlHashDbMsSql(sql_text);
+                    }
+                    else {
+                        sql_text = event.GetFunc();
+                        sql_text_hash = *sql_text;
+                    }                    
                     sql_aggregator.Add(
                         {
                             1,
@@ -373,7 +378,8 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                                 *event.GetContext(),
                                 *sql_text,
                                 std::move(sql_text_hash),
-                                *event.GetplanSQLText()
+                                *event.GetplanSQLText(),
+                                std::move(plan_txt.GetSqlPlanTokens())
                             }
                         );
                     }
@@ -445,6 +451,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
             if (is_new_minute && curTime.tm_sec > 10) {
                 std::uint64_t event_time = TechLogOneC::ToUint64(TechLogOneC::ToTm(prevMinute));
                 boost::json::object j_object;
+                j_object.emplace("host", HOST);
                 j_object.emplace("version", VERSION_STR);
                 j_object.emplace("date", TechLogOneC::ToDateFormatString(event_time, ss));
                 

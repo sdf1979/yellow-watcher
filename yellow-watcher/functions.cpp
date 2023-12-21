@@ -221,4 +221,15 @@ namespace TechLogOneC {
 		str.remove_prefix(pos + 1);
 		return res;
 	}
+
+	string GetStmtFromPlanSqlText(std::string_view& str) {
+		auto pos = str.find("|--");
+		str.remove_prefix(pos + 3);
+		return string(str);
+	}
+
+	string GetMethodFromPlanSqlText(std::string_view& str) {
+		auto pos = str.find('(');
+		return string(str.substr(0, pos));
+	}
 }

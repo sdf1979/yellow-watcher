@@ -4,6 +4,24 @@ using namespace std;
 
 namespace TechLogOneC {
 
+	vector<sql_plan_token> PlanTxt::GetSqlPlanTokens() {
+		vector<sql_plan_token> sql_plan_tokens(rows_all_.size());
+		for (size_t index = 0; index < rows_all_.size(); ++index) {
+			sql_plan_tokens[index] = {
+				rows_all_[index].rows_,
+				rows_all_[index].executes_,
+				rows_all_[index].estimate_rows_,
+				rows_all_[index].estimate_io_,
+				rows_all_[index].estimate_cpu_,
+				rows_all_[index].avg_row_size_,
+				rows_all_[index].total_subtree_cost_,
+				rows_all_[index].estimate_executions_,
+				rows_all_[index].method_
+			};
+		}
+		return sql_plan_tokens;
+	}
+
 	PlanTxt PlanTxt::Parse(std::string_view str) {
 		PlanTxt plan_txt;
 		auto pos = str.find('\n');
@@ -36,7 +54,8 @@ namespace TechLogOneC {
 		plan_txt_row.avg_row_size_ = GetInt64FromPlanSqlText(str);
 		plan_txt_row.total_subtree_cost_ = GetDoubleFromPlanSqlText(str);
 		plan_txt_row.estimate_executions_ = GetDoubleFromPlanSqlText(str);
-		plan_txt_row.stmt_text_ = str;
+		plan_txt_row.stmt_text_ = GetStmtFromPlanSqlText(str);
+		plan_txt_row.method_ = GetMethodFromPlanSqlText(str);
 		return plan_txt_row;
 	}
 

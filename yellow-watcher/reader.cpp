@@ -223,7 +223,7 @@ const wstring& Reader::GetFileName() {
 }
 
 pair<const char*, int> Reader::GetBuffer() {
-    return { buffer_, size_read_ } ;
+    return { buffer_, static_cast<int>(size_read_) };
 }
 
 void Reader::ClearBuffer() {

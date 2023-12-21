@@ -2,9 +2,12 @@
 
 #include <string>
 #include <sstream>
+#include <vector>
 #include "boost/json.hpp"
 #include "time.h"
 #include "functions.h"
+
+using sql_plan_token = std::tuple<std::uint64_t, std::uint64_t, double, double, double, std::uint64_t, double, double, std::string>;
 
 namespace TechLogOneC {
 
@@ -67,6 +70,7 @@ namespace TechLogOneC {
 		std::string sql_text_;
 		std::string sql_text_hash_;
 		std::string sql_plan_text_;
+		std::vector<sql_plan_token> sql_plan_tokens_;
 		static boost::json::array Columns();
 		boost::json::array ToJsonArray(std::stringstream& ss);
 	};

@@ -4,3 +4,4 @@
 /x64/Debug/
 /yellow-watcher/x64/
 x64/Release/settings.json
+*.vcxproj

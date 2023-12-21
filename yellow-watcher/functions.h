@@ -26,6 +26,8 @@ namespace TechLogOneC {
 	std::string SqlHashDbMsSql(const std::string* str);
 	std::uint64_t GetInt64FromPlanSqlText(std::string_view& str);
 	double GetDoubleFromPlanSqlText(std::string_view& str);
+	std::string GetStmtFromPlanSqlText(std::string_view& str);
+	std::string GetMethodFromPlanSqlText(std::string_view& str);
 
 	template<typename T>
 	std::string UnsupportedDataType(T t) {

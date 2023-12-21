@@ -109,7 +109,7 @@ namespace TechLogOneC {
 			"rows", "rows_affected", "rows_processed", "estimate_rows_processed", "data_size", "estimate_data_size",
 			"data_base", "computer", "session", "user",
 			"last_string_context", "hash_last_string_context", "context", "hash_context", "sql_text",
-			"sql_text_hash", "hash_sql_text_hash", "sql_plan_text" };
+			"sql_text_hash", "hash_sql_text_hash", "sql_plan_text", "sql_plan_tokens"};
 	}
 
 	boost::json::array LongRequestEvent::ToJsonArray(stringstream& ss) {
@@ -117,7 +117,7 @@ namespace TechLogOneC {
 			rows_, rows_affected_, rows_processed_, estimate_rows_processed_, data_size_, estimate_data_size_,
 			data_base_, computer_, session_id_, user_,
 			last_string_context_, GetSHA256(last_string_context_, ss), context_, GetSHA256(context_, ss), sql_text_,
-			sql_text_hash_, GetSHA256(sql_text_hash_, ss), sql_plan_text_ };
+			sql_text_hash_, GetSHA256(sql_text_hash_, ss), sql_plan_text_, sql_plan_tokens_ };
 	}
 	
 }
