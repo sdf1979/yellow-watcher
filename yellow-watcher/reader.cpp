@@ -1,4 +1,7 @@
-﻿#include "reader.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "reader.h"
 
 using namespace std;
 
@@ -86,6 +89,7 @@ uint64_t FindStartPositionBuffer(char* buffer, uint64_t size) {
 //}
 
 Reader::Reader(wstring file_name, unsigned int size_buffer) :
+    id_(0),
     pos_(0),
     pos_end_(0),
     buffer_(nullptr),

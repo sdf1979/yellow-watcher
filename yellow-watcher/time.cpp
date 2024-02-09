@@ -1,4 +1,7 @@
-﻿#include "time.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "time.h"
 
 using namespace std;
 
@@ -11,7 +14,7 @@ namespace TechLogOneC {
 		return tm;
 	}
 
-	uint64_t ToUint64(tm tm, uint32_t mseconds) {
+	uint64_t ToUint64(tm tm, uint32_t mseconds) { //-V813
 		return
 			((tm.tm_year + 1900) % 100) * static_cast<uint64_t>(10000000000000000) +
 			(tm.tm_mon + 1) * static_cast<uint64_t>(100000000000000) +

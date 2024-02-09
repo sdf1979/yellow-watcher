@@ -1,4 +1,7 @@
-﻿#include "settings.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "settings.h"
 
 using namespace std;
 
@@ -9,7 +12,7 @@ void Settings::CreateSettings(const fs::path& file_path) {
     if (!fs::exists(file_path)) {
         const std::string json = R"({ 
     "logs_path": "",
-    "service_path": "http://server:port/base_name/hs/IntegrationService/LoadManagedLocks",
+    "service_path": "http://server:port/base_name/hs/IntegrationService/Load",
     "user": "",
     "password": "",
     "log_storage_duration_in_hours" : 24,
@@ -117,7 +120,6 @@ bool ReadValue(json::object* j_object, vector<string>& value, const char* key) {
 
 bool Settings::Read(fs::path dir) {
     fs::path file_path = dir.append(L"settings.json");
-    std::string path_settings = file_path.string();
     if (!fs::exists(file_path)) {
         CreateSettings(file_path);
     }

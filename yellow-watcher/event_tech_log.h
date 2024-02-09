@@ -5,7 +5,8 @@
 #include <vector>
 #include "boost/json.hpp"
 #include "time.h"
-#include "functions.h"
+//#include "functions.h"
+#include "SqlTextHash.h"
 
 using sql_plan_token = std::tuple<std::uint64_t, std::uint64_t, double, double, double, std::uint64_t, double, double, std::string>;
 

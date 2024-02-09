@@ -1,4 +1,7 @@
-﻿#include "logger.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "logger.h"
 
 using namespace std;
 
@@ -53,7 +56,7 @@ wstring Logger::LogFileName() {
     return Utf8ToWideChar(string(&buffer[0]).append(".log"));
 }
 
-void DeleteLogHistory(filesystem::path dir, int log_storage_duration) {
+void DeleteLogHistory(const filesystem::path& dir, int log_storage_duration) {
     chrono::system_clock::time_point now = chrono::system_clock::now() - chrono::hours(log_storage_duration);
     time_t time = chrono::system_clock::to_time_t(now);
     struct tm tm;
@@ -64,7 +67,6 @@ void DeleteLogHistory(filesystem::path dir, int log_storage_duration) {
 
     if (filesystem::exists(dir)) {
         for (const filesystem::directory_entry& it : filesystem::recursive_directory_iterator(dir)) {
-            auto ss = it.path().filename().wstring();
             if (it.is_regular_file() && it.path().extension().string() == ".log" && it.path().filename().wstring() < max_file_name) {
                 error_code ec;
                 filesystem::remove(it.path(), ec);

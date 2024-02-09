@@ -1,4 +1,7 @@
-﻿#include "sender.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "sender.h"
 
 #include <iostream>
 #include <io.h>
@@ -20,6 +23,7 @@
 #include "event_accumulator.h"
 #include "event_tech_log.h"
 #include "objects_event.h"
+#include "SqlTextHash.h"
 
 static auto LOGGER = Logger::getInstance();
 static std::filesystem::path PROGRAM_PATH;
@@ -37,7 +41,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParam);
 
 wchar_t SERVICE_NAME[100] = L"Yellow Watcher Service";
 const std::wstring* LOGS_PATH;
-static const std::wstring VERSION = L"1.50";
+static const std::wstring VERSION = L"1.51";
 static const std::string VERSION_STR = WideCharToUtf8(VERSION);
 
 void GetPath();
@@ -51,9 +55,9 @@ VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 DWORD WINAPI WorkerThread(LPVOID lpParam);
 
 int wmain(int argc, wchar_t** argv) {
-    _setmode(_fileno(stdout), _O_U16TEXT);
-    _setmode(_fileno(stdin), _O_U16TEXT);
-    _setmode(_fileno(stderr), _O_U16TEXT);
+    auto cur_mode_out = _setmode(_fileno(stdout), _O_U16TEXT);
+    auto cur_mode_in = _setmode(_fileno(stdin), _O_U16TEXT);
+    auto cur_mode_err = _setmode(_fileno(stderr), _O_U16TEXT);
 
     std::wstring host;
     host.resize(MAX_COMPUTERNAME_LENGTH + 1);
@@ -203,7 +207,7 @@ void RunAnalysis() {
                         *event.GetDatabase(),
                         LastStringContext(event.GetContext()),
                         *event.GetContext(),
-                        SqlHashDbMsSql(sql_text)
+                        Soldy::SqlHashDbMsSql(sql_text)
                     );
                 }
                 else if (event.Name() == "TTIMEOUT") {
@@ -251,7 +255,7 @@ void RunAnalysis() {
     std::wcout << Utf8ToWideChar(boost::json::serialize(j_object)) << '\n';
 }
 
-void Send(Sender* sender, std::string target, std::string data) {
+void Send(Sender* sender, const std::string& target, const std::string& data) {
     std::chrono::time_point<std::chrono::high_resolution_clock> start_send = std::chrono::high_resolution_clock::now();
     sender->Send(target, data);
 
@@ -273,7 +277,10 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
         ExitProcess(1);
     }
     LOGGER->SetLogStorageDuration(settings.LogStorageDuration());
-    if (!LOGS_PATH->empty()) settings.SetTechLogsPath(WideCharToUtf8(*LOGS_PATH));
+    if (!LOGS_PATH->empty()) {
+        settings.SetTechLogsPath(WideCharToUtf8(*LOGS_PATH));
+    }
+
     {
         time_point prevMinute = TechLogOneC::NowMinute();
         std::tm curTime = TechLogOneC::ToTm(prevMinute);
@@ -281,16 +288,13 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
         DirectoryWatcher dw(Utf8ToWideChar(settings.TechLogsPath()));
         dw.Init();
         
-        //ttimeout_aggregator  = count, time, database, computer, last string context, context
+        //ttimeout_aggregator = count, time, database, computer, last string context, context
         TechLogOneC::EventAggregator<std::uint64_t, std::uint64_t, std::string, std::string, std::string, std::string> ttimeout_aggregator;
 
         //tdeadlock_aggregator = count, time, database, computer, last string context, context
         TechLogOneC::EventAggregator<std::uint64_t, std::uint64_t, std::string, std::string, std::string, std::string> tdeadlock_aggregator;
-
-        //sql_aggregator       = EventOptions, time, database, computer, last string context, context, hash sql text
-        TechLogOneC::EventAggregator<TechLogOneC::EventOptions, std::uint64_t, std::string, std::string, std::string, std::string, std::string> sql_aggregator;
-
-        //tlock_aggregator     = Measurment, time, database, computer, regions
+        
+        //tlock_aggregator = Measurment, time, database, computer, regions
         TechLogOneC::EventAggregator<TechLogOneC::Measurment, std::uint64_t, std::string, std::string, std::string> tlock_aggregator;
 
         TechLogOneC::EventAccumulator<TechLogOneC::ManagedLockEvent> accumulator_managed_lock;
@@ -323,66 +327,47 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                     cur_event_time = TechLogOneC::ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event.Minute(), event.Second(), event.Msecond());
                     if (cur_event_time > max_event_time) max_event_time = cur_event_time;
                 }
-                if (event.Name() == "DBMSSQL") {
+                if (event.Name() == "DBMSSQL" && event.Duration() >= duration_long_request) {
                     std::uint64_t rows = TechLogOneC::RowsToUint64(event.GetRow());
                     std::uint64_t rows_affected = TechLogOneC::RowsToUint64(event.GetRowsAffected());
                     std::string last_string_context = TechLogOneC::LastStringContext(event.GetContext());
                     TechLogOneC::PlanTxt plan_txt = TechLogOneC::PlanTxt::Parse(*event.GetplanSQLText());
                     sql_text = event.GetSql();
                     if (!sql_text->empty()) {
-                        sql_text_hash = TechLogOneC::SqlHashDbMsSql(sql_text);
+                        sql_text_hash = Soldy::SqlHashDbMsSql(sql_text);
                     }
                     else {
                         sql_text = event.GetFunc();
                         sql_text_hash = *sql_text;
-                    }                    
-                    sql_aggregator.Add(
+                    }
+                    std::uint64_t dbpid = 0;
+                    if (!event.GetDbPid()->empty()) {
+                        dbpid = std::stoull(*event.GetDbPid());
+                    }
+                    accumulator_long_request.Add(
                         {
-                            1,
+                            TechLogOneC::ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event.Minute(), event.Second(), event.Msecond()),
                             event.Duration(),
+                            dbpid,
                             rows,
                             rows_affected,
                             plan_txt.rows_,
                             plan_txt.estimate_rows_,
                             plan_txt.data_size_,
-                            plan_txt.estimate_data_size_
-                        },
-                        TechLogOneC::ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event.Minute()),
-                        *event.GetDatabase(),
-                        *event.GetComputer(),
-                        last_string_context,
-                        *event.GetContext(),
-                        sql_text_hash
-                    );
-                    if (event.Duration() >= duration_long_request) {
-                        std::uint64_t dbpid = 0;
-                        if (!event.GetDbPid()->empty()) {
-                            dbpid = std::stoull(*event.GetDbPid());
+                            plan_txt.estimate_data_size_,
+                            *event.GetDatabase(),
+                            *event.GetComputer(),
+                            *event.GetSession(),
+                            *event.GetUsr(),
+                            std::move(last_string_context),
+                            *event.GetContext(),
+                            *sql_text,
+                            std::move(sql_text_hash),
+                            *event.GetplanSQLText(),
+                            std::move(plan_txt.GetSqlPlanTokens())
                         }
-                        accumulator_long_request.Add(
-                            {
-                                TechLogOneC::ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event.Minute(), event.Second(), event.Msecond()),
-                                event.Duration(),
-                                dbpid,
-                                rows,
-                                rows_affected,
-                                plan_txt.rows_,
-                                plan_txt.estimate_rows_,
-                                plan_txt.data_size_,
-                                plan_txt.estimate_data_size_,
-                                *event.GetDatabase(),
-                                *event.GetComputer(),
-                                *event.GetSession(),
-                                *event.GetUsr(),
-                                std::move(last_string_context),
-                                *event.GetContext(),
-                                *sql_text,
-                                std::move(sql_text_hash),
-                                *event.GetplanSQLText(),
-                                std::move(plan_txt.GetSqlPlanTokens())
-                            }
-                        );
-                    }
+                    );
+
                 }
                 else if (event.Name() == "TTIMEOUT") {
                     TechLogOneC::ManagedLockEvent managed_lock_event(
@@ -475,18 +460,6 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                         TechLogOneC::GenerationRule{ TechLogOneC::KeyConversion::NoConvertion , true });
                     j_object.emplace("tdeadlock", tdeadlock_aggregator_minute->ToJsonObject());
                     tdeadlock_aggregator.Delete(event_time);
-                }
-
-                auto sql_aggregator_minute = sql_aggregator.Find(event_time);
-                if (sql_aggregator_minute) {
-                    sql_aggregator_minute->SetGenerationRule(
-                        TechLogOneC::GenerationRule{ TechLogOneC::KeyConversion::NoConvertion, false },
-                        TechLogOneC::GenerationRule{ TechLogOneC::KeyConversion::NoConvertion, false },
-                        TechLogOneC::GenerationRule{ TechLogOneC::KeyConversion::NoConvertion, true },
-                        TechLogOneC::GenerationRule{ TechLogOneC::KeyConversion::NoConvertion , true },
-                        TechLogOneC::GenerationRule{ TechLogOneC::KeyConversion::NoConvertion , true });
-                    j_object.emplace("dbmssql", sql_aggregator_minute->ToJsonObject());
-                    sql_aggregator.Delete(event_time);
                 }
 
                 auto tlock_aggregator_minute = tlock_aggregator.Find(event_time);
@@ -606,6 +579,9 @@ int InstallService(LPCWSTR serviceName, LPCWSTR servicePath) {
 
     CloseServiceHandle(hService);
     CloseServiceHandle(hSCManager);
+
+    Settings settings;
+    settings.Read(PROGRAM_PATH);
 
     LOGGER->Print(L"Success install service!", true);
 

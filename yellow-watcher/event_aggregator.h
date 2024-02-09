@@ -12,6 +12,7 @@
 #include "functions.h"
 #include "event_tech_log.h"
 #include "time.h"
+#include "SqlTextHash.h"
 
 namespace TechLogOneC {
 
@@ -121,7 +122,7 @@ namespace TechLogOneC {
 				j_row.emplace("key", it->first);
 			}
 			if (generation_rule_.generate_hash_) {
-				j_row.emplace("key_hash", GetSHA256(it->first, ss));
+				j_row.emplace("key_hash", Soldy::GetSHA256(it->first, ss));
 			}
 			j_row.emplace("rows", it->second.ToJsonArray());
 			j_rows.emplace_back(j_row);
@@ -144,7 +145,7 @@ namespace TechLogOneC {
 			}
 
 			if (generation_rule_.generate_hash_) {
-				j_row.emplace("key_hash", GetSHA256(it->first, ss));
+				j_row.emplace("key_hash", Soldy::GetSHA256(it->first, ss));
 			}
 
 			if (std::is_same<EvOpt, EventOptions>::value) {

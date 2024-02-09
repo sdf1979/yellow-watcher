@@ -1,4 +1,7 @@
-﻿#include "directory_watcher.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "directory_watcher.h"
 
 static auto LOGGER = Logger::getInstance();
 
@@ -29,14 +32,14 @@ void DirectoryWatcher::ExecuteStep(bool anyway) {
     ReadFiles();
 }
 
-void DirectoryWatcher::AddFiles(filesystem::path path, bool check_file_time) {
+void DirectoryWatcher::AddFiles(const filesystem::path& path, bool check_file_time) {
     time_t cur_time = chrono::system_clock::to_time_t(chrono::system_clock::now());
     wstring file_name = path.wstring();
     auto it = files_search_.find(file_name);
     if (it == files_search_.end()) {
         unique_ptr<Reader> new_file = make_unique<Reader>(file_name, 65535);
         if (new_file->IsWorkingFile(cur_time, check_file_time)) {
-            files_.push_back({ move(new_file), make_unique<Parser>() });
+            files_.emplace_back(move(new_file), make_unique<Parser>());
             files_search_.insert({ file_name, --files_.end() });
             if (LOGGER->LogType() == Logger::Type::Trace) {
                 string msg = "Added a new monitoring file '";
@@ -70,7 +73,7 @@ void DirectoryWatcher::ReadDirectory(bool anyway, bool check_file_time) {
                 }
             }
         }
-        catch (std::system_error error) {
+        catch (std::system_error& error) {
             string msg(directory_.string());
             msg.append(";").append(error.what());
             LOGGER->Print(AnsiToWideChar(msg), Logger::Type::Error);
@@ -96,7 +99,7 @@ void DirectoryWatcher::ReadFiles(bool check_file_time) {
                     parser_->Parse(buffer_.first, buffer_.second);
                     events_temp_ = parser_->MoveEvents();
                     for (auto it = events_temp_.begin(); it != events_temp_.end(); ++it) {
-                        events_.push_back({ reader_->FileTime(), move(*it) });
+                        events_.emplace_back(reader_->FileTime(), move(*it));
                     }
                     reader_->ClearBuffer();
                 }
@@ -124,7 +127,7 @@ void DirectoryWatcher::CloseCursor() {
 
 bool DirectoryWatcher::ReadNext(std::size_t count) {
     while (events_temp_.size() && it_event_temp_ != events_temp_.end()) {
-        events_.push_back({ reader_->FileTime(), move(*it_event_temp_) });
+        events_.emplace_back(reader_->FileTime(), move(*it_event_temp_));
         ++it_event_temp_;
         if (events_.size() >= count) return true;
     }
@@ -142,7 +145,7 @@ bool DirectoryWatcher::ReadNext(std::size_t count) {
             reader_->ClearBuffer();
             it_event_temp_ = events_temp_.begin();
             while (it_event_temp_ != events_temp_.end()) {
-                events_.push_back({ reader_->FileTime(), move(*it_event_temp_) });
+                events_.emplace_back(reader_->FileTime(), move(*it_event_temp_));
                 ++it_event_temp_;
                 if (events_.size() >= count) return true;
             }

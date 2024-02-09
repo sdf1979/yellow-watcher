@@ -1,4 +1,7 @@
-﻿#include "parser.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "parser.h"
 
 static auto LOGGER = Logger::getInstance();
 
@@ -58,7 +61,7 @@ EventData& EventData::operator=(EventData&& event_data) noexcept {
     name_ = move(event_data.name_);
     level_ = event_data.level_;
     key_temp_ = move(event_data.key_temp_);
-    value_temp_ = move(value_temp_);
+    value_temp_ = move(event_data.value_temp_);
     values_ = move(event_data.values_);
     is_key_index_ = event_data.is_key_index_;
     key_index_ = event_data.key_index_;
@@ -97,25 +100,6 @@ bool IsGuid(const char* begin, const char* end) {
         }
     }
     return true;
-}
-
-string ReplaceGuid(string value) {
-    size_t size = value.size();
-    if (size < 37) {
-        return move(value);
-    }
-    else {
-        const char* begin = value.c_str() + size - 36;
-        if (IsGuid(begin, begin + 36)) {
-            string new_value;
-            new_value.append(value.substr(0, size - 36));
-            new_value.append("_guid");
-            return new_value;
-        }
-        else {
-            return(move(value));
-        }
-    }
 }
 
 void EventData::EndValue() {
@@ -182,14 +166,16 @@ void EventData::EndValue() {
     if (value_temp_.back() == '\r') {
         value_temp_.pop_back();
     }
-    values_.push_back({ move(key_temp_), move(value_temp_) });
+    values_.emplace_back(move(key_temp_), move(value_temp_));
 }
 
 TypeChar GetTypeChar(char ch, Parser* const parser) {
     if (ch == -48 || ch == -47) {
         return TypeChar::Char;
     }
-    else if (ch >= -128 && ch <= -65) {
+    //The value range of char type : [-128, 127]
+    //else if (ch >= -128 && ch <= -65)
+    else if (ch <= -65) {
         return TypeChar::Char;
     }
     else if (ch >= 'a' && ch <= 'z') {
@@ -340,7 +326,7 @@ void EndValue(const char** ch, Parser* const parser) {
 
 void EndEvent(const char** ch, Parser* const parser) {
     parser->event_data.offset_end_ = parser->offset_;
-    parser->events_.push_back(move(parser->event_data));
+    parser->events_.emplace_back(move(parser->event_data));
 }
 
 void Mvalue(const char** ch, Parser* const parser) {
@@ -410,12 +396,12 @@ void Parser::Parse(const char* ch, int size) {
     if (ptr_fcn == Start) {
         ptr_fcn(&ch, this);
     }
-    ptr_fcn = TransitionTable[(int)GetState(ptr_fcn)][(int)GetTypeChar(*ch, this)];
+    ptr_fcn = TransitionTable[(int)GetState(ptr_fcn)][(int)GetTypeChar(*ch, this)]; //-V557
 
     //Обрабатываем от второго до предпоследнего
     for (; ch != end;) {
         ptr_fcn(&ch, this);
-        ptr_fcn = TransitionTable[(int)GetState(ptr_fcn)][(int)GetTypeChar(*ch, this)];
+        ptr_fcn = TransitionTable[(int)GetState(ptr_fcn)][(int)GetTypeChar(*ch, this)]; //-V557
     }
 
     //Обрабатываем крайний
@@ -425,12 +411,12 @@ void Parser::Parse(const char* ch, int size) {
         if (ch == end) {
             break;
         }
-        ptr_fcn = TransitionTable[(int)GetState(ptr_fcn)][(int)GetTypeChar(*ch, this)];
+        ptr_fcn = TransitionTable[(int)GetState(ptr_fcn)][(int)GetTypeChar(*ch, this)]; //-V557
     }
 };
 
 void Parser::AddEvent(EventData&& event_data) {
-    events_.push_back(move(event_data));
+    events_.emplace_back(move(event_data));
 }
 
 std::vector<EventData>&& Parser::MoveEvents() {
@@ -446,7 +432,7 @@ vector<string_view> split(string_view sv, const char* splitter) {
     for (;;) {
         auto pos = sv.find(splitter);
         if (pos != string_view::npos) {
-            result.push_back(sv.substr(0, pos));
+            result.emplace_back(sv.substr(0, pos));
             sv.remove_prefix(pos + 1);
         }
         else {

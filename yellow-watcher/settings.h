@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -29,7 +32,7 @@ public:
 	std::string User() { return user; }
 	std::string Password() { return password; }
 	std::string TechLogsPath() { return tech_logs_path; }
-	void SetTechLogsPath(std::string path) { tech_logs_path = path; }
+	void SetTechLogsPath(const std::string& path) { tech_logs_path = path; }
 	int LogStorageDuration() { return log_storage_duration; }
 	std::uint64_t DurationLongRequest() { return duration_long_request; }
 };

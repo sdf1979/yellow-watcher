@@ -162,6 +162,7 @@
     <ClCompile Include="sender.cpp" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="directory_watcher.cpp" />
+    <ClCompile Include="SqlTextHash.cpp" />
     <ClCompile Include="time.cpp" />
     <ClCompile Include="timer_perf.cpp" />
     <ClCompile Include="yellow-watcher.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="event_tech_log.h" />
     <ClInclude Include="functions.h" />
     <ClInclude Include="objects_event.h" />
+    <ClInclude Include="SqlTextHash.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="logger.h" />
     <ClInclude Include="parser.h" />

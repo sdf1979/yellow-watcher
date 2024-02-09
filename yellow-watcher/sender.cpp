@@ -1,11 +1,14 @@
-﻿#include "sender.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "sender.h"
 #include <iostream>
 
 static auto LOGGER = Logger::getInstance();
 
 using namespace std;
 
-void fail(beast::error_code ec, char const* what) {
+void fail(const beast::error_code& ec, char const* what) {
     string msg("sender: ");
     msg.append(what).append(": ").append(ec.message());
     LOGGER->Print(WideCharToUtf8(AnsiToWideChar(msg)), Logger::Type::Error);
@@ -24,9 +27,9 @@ class Session : public enable_shared_from_this<Session> {
 public:
     explicit Session(net::io_context& ioc, const string& host, const string& port, const string& password, const string& login);
     void Run(char const* target, const string& data);
-    void OnResolve(beast::error_code ec, tcp::resolver::results_type results);
-    void OnConnect(beast::error_code ec, tcp::resolver::results_type::endpoint_type);
-    void OnWrite(beast::error_code ec, std::size_t bytes_transferred);
+    void OnResolve(const beast::error_code& ec, tcp::resolver::results_type results);
+    void OnConnect(const beast::error_code& ec, tcp::resolver::results_type::endpoint_type);
+    void OnWrite(const beast::error_code& ec, std::size_t bytes_transferred);
     void OnRead(beast::error_code ec, std::size_t bytes_transferred);
 };
 
@@ -75,7 +78,7 @@ void Session::Run(char const* target, const string& data) {
     resolver_.async_resolve(host_, port_, beast::bind_front_handler(&Session::OnResolve, shared_from_this()));
 }
 
-void Session::OnResolve(beast::error_code ec, tcp::resolver::results_type results) {
+void Session::OnResolve(const beast::error_code& ec, tcp::resolver::results_type results) { //-V813
     if (ec) {
         return fail(ec, "resolve");
     }
@@ -83,7 +86,7 @@ void Session::OnResolve(beast::error_code ec, tcp::resolver::results_type result
     stream_.async_connect(results, beast::bind_front_handler(&Session::OnConnect, shared_from_this()));
 }
 
-void Session::OnConnect(beast::error_code ec, tcp::resolver::results_type::endpoint_type) {
+void Session::OnConnect(const beast::error_code& ec, tcp::resolver::results_type::endpoint_type) {
     if (ec) {
         return fail(ec, "connect");
     }
@@ -92,7 +95,7 @@ void Session::OnConnect(beast::error_code ec, tcp::resolver::results_type::endpo
     http::async_write(stream_, req_, beast::bind_front_handler(&Session::OnWrite, shared_from_this()));
 }
 
-void Session::OnWrite(beast::error_code ec, std::size_t bytes_transferred) {
+void Session::OnWrite(const beast::error_code& ec, std::size_t bytes_transferred) {
     boost::ignore_unused(bytes_transferred);
 
     if (ec) {

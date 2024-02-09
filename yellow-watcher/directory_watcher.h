@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#pragma once
 
 #include <memory>
 #include <time.h>
@@ -17,7 +20,7 @@ class DirectoryWatcher {
     time_t last_directory_read_;
     const time_t DIRECTORY_READ_PERIOD;
     std::vector<std::pair<std::tm, EventData>> events_;
-    void AddFiles(std::filesystem::path path, bool check_file_time);
+    void AddFiles(const std::filesystem::path& path, bool check_file_time);
     void DeleteFiles(const std::vector<std::list<File>::iterator>& not_working_files);
     std::list<File>::iterator it_file_;
     std::vector<EventData>::iterator it_event_temp_;

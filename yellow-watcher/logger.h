@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#pragma once
 
 #include <iostream>
 #include <sstream>
@@ -42,7 +45,7 @@ private:
     int log_storage_duration_;
     void NewFile();
 protected:
-    Logger() {}
+    Logger() = default;
     Logger(const Logger&);
     Logger& operator=(Logger&);
     ~Logger();

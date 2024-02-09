@@ -1,4 +1,7 @@
-﻿#include "event_tech_log.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "event_tech_log.h"
 
 using namespace std;
 
@@ -75,7 +78,7 @@ namespace TechLogOneC {
 
 	boost::json::array ManagedLockEvent::ToJsonArray(stringstream& ss) {
 		return { ToDateFormatString(time_, ss), Microseconds(time_), type_, data_base_, computer_, session_id_,
-			wait_connections_, user_, last_string_context_, GetSHA256(last_string_context_, ss), context_, GetSHA256(context_, ss) };
+			wait_connections_, user_, last_string_context_, Soldy::GetSHA256(last_string_context_, ss), context_, Soldy::GetSHA256(context_, ss) };
 	}
 
 	boost::json::object Measurment::AsJsonObject() const {
@@ -116,8 +119,8 @@ namespace TechLogOneC {
 		return { ToDateFormatString(time_, ss), Microseconds(time_), duration_, dbpid_,
 			rows_, rows_affected_, rows_processed_, estimate_rows_processed_, data_size_, estimate_data_size_,
 			data_base_, computer_, session_id_, user_,
-			last_string_context_, GetSHA256(last_string_context_, ss), context_, GetSHA256(context_, ss), sql_text_,
-			sql_text_hash_, GetSHA256(sql_text_hash_, ss), sql_plan_text_, sql_plan_tokens_ };
+			last_string_context_, Soldy::GetSHA256(last_string_context_, ss), context_, Soldy::GetSHA256(context_, ss), sql_text_,
+			sql_text_hash_, Soldy::GetSHA256(sql_text_hash_, ss), sql_plan_text_, sql_plan_tokens_ };
 	}
 	
 }

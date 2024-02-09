@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#pragma once
 
 #include <chrono>
 #include <mutex>
@@ -20,13 +23,13 @@ private:
     static std::mutex mutex_;
     std::unordered_map<std::string, std::pair<std::chrono::nanoseconds, std::uint64_t>> measurements_;
 protected:
-    TimerPerf();
+    TimerPerf() = default;
 public:
     TimerPerf(TimerPerf&) = delete;
     void Print();
     void operator=(const TimerPerf&) = delete;
     static TimerPerf* GetInstance();
-    void Elapsed(std::string id, std::chrono::time_point<clock_> start);
+    void Elapsed(const std::string& id, std::chrono::time_point<clock_> start);
     void Clear() { measurements_.clear(); }
 };
 

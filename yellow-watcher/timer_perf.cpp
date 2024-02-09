@@ -1,11 +1,12 @@
-﻿#include "timer_perf.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "timer_perf.h"
 
 using namespace std;
 
 TimerPerf* TimerPerf::instance_ = nullptr;
 mutex TimerPerf::mutex_;
-
-TimerPerf::TimerPerf() {}
 
 TimerPerf* TimerPerf::GetInstance() {
     lock_guard<mutex> lock(mutex_);
@@ -15,9 +16,9 @@ TimerPerf* TimerPerf::GetInstance() {
     return instance_;
 }
 
-void TimerPerf::Elapsed(string id, chrono::time_point<clock_> start) {
+void TimerPerf::Elapsed(const string& id, chrono::time_point<clock_> start) {
     auto duration = clock_::now() - start;
-    auto it = measurements_.insert({ id, {duration, 1} });
+    auto it = measurements_.try_emplace(id, make_pair(duration, 1));
     if (!it.second) {
         it.first->second.first += duration;
         ++it.first->second.second;
@@ -27,7 +28,7 @@ void TimerPerf::Elapsed(string id, chrono::time_point<clock_> start) {
 void TimerPerf::Print() {
     vector<pair<string, pair<chrono::nanoseconds, uint64_t>>> measurements;
     for (auto it = measurements_.begin(); it != measurements_.end(); ++it) {
-        measurements.push_back({ it->first, {it->second.first, it->second.second} });
+        measurements.emplace_back(make_pair(it->first, make_pair(it->second.first, it->second.second)));
     }
     sort(measurements.begin(), measurements.end(), [](const pair<string, pair<chrono::nanoseconds, uint64_t>>& lhs, const pair<string, pair<chrono::nanoseconds, uint64_t>>& rhs) {
         return lhs.second.first > rhs.second.first;

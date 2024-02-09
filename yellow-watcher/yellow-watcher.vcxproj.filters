@@ -54,6 +54,9 @@
     <ClCompile Include="objects_event.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SqlTextHash.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="encoding_string.h">
@@ -99,6 +102,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="objects_event.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SqlTextHash.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

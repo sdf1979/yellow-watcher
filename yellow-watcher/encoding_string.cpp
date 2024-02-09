@@ -1,4 +1,7 @@
-﻿#include "encoding_string.h"
+﻿// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+#include "encoding_string.h"
 
 std::wstring Utf8ToWideChar(const std::string& str) {
     int count = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.length()), NULL, 0);
