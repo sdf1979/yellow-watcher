@@ -63,7 +63,9 @@ class EventData {
     // 11 - Func
     // 12 - Regions
     // 13 - dbpid
-    std::array<bool, 14> is_key_index_;
+    // 14 - Exception
+    // 15 - Descr
+    std::array<bool, 16> is_key_index_;
     // Массив для хранения индекса конкретного свойства в values_
     // 0  - Context
     // 1  - Sql
@@ -79,7 +81,9 @@ class EventData {
     // 11 - Func
     // 12 - Regions
     // 13 - dbpid
-    std::array<std::uint64_t, 14> key_index_;   
+    // 14 - Exception
+    // 15 - Descr
+    std::array<std::uint64_t, 16> key_index_;   
 
     void EndValue();
     const std::string* GetProperty(std::uint64_t) const;
@@ -126,6 +130,8 @@ public:
     const std::string* GetFunc() const { return GetProperty(11); }
     const std::string* GetRegions() const { return GetProperty(12); }
     const std::string* GetDbPid() const { return GetProperty(13); }
+    const std::string* GetException() const { return GetProperty(14); }
+    const std::string* GetDescr() const { return GetProperty(15); }
 };
 
 class Parser {

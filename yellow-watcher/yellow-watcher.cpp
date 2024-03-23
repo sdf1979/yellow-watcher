@@ -24,6 +24,7 @@
 #include "event_tech_log.h"
 #include "objects_event.h"
 #include "SqlTextHash.h"
+#include "functions.h"
 
 static auto LOGGER = Logger::getInstance();
 static std::filesystem::path PROGRAM_PATH;
@@ -41,7 +42,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParam);
 
 wchar_t SERVICE_NAME[100] = L"Yellow Watcher Service";
 const std::wstring* LOGS_PATH;
-static const std::wstring VERSION = L"1.51";
+static const std::wstring VERSION = L"1.56";
 static const std::string VERSION_STR = WideCharToUtf8(VERSION);
 
 void GetPath();
@@ -299,6 +300,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
 
         TechLogOneC::EventAccumulator<TechLogOneC::ManagedLockEvent> accumulator_managed_lock;
         TechLogOneC::EventAccumulator<TechLogOneC::LongRequestEvent> accumulator_long_request;
+        TechLogOneC::EventAccumulator<TechLogOneC::MsSqlExcpEvent> accumulator_ms_sql_excp;
 
         Sender sender(settings.Server(), settings.Port(), settings.User(), settings.Password());
 
@@ -328,9 +330,6 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                     if (cur_event_time > max_event_time) max_event_time = cur_event_time;
                 }
                 if (event.Name() == "DBMSSQL" && event.Duration() >= duration_long_request) {
-                    std::uint64_t rows = TechLogOneC::RowsToUint64(event.GetRow());
-                    std::uint64_t rows_affected = TechLogOneC::RowsToUint64(event.GetRowsAffected());
-                    std::string last_string_context = TechLogOneC::LastStringContext(event.GetContext());
                     TechLogOneC::PlanTxt plan_txt = TechLogOneC::PlanTxt::Parse(*event.GetplanSQLText());
                     sql_text = event.GetSql();
                     if (!sql_text->empty()) {
@@ -340,17 +339,13 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                         sql_text = event.GetFunc();
                         sql_text_hash = *sql_text;
                     }
-                    std::uint64_t dbpid = 0;
-                    if (!event.GetDbPid()->empty()) {
-                        dbpid = std::stoull(*event.GetDbPid());
-                    }
                     accumulator_long_request.Add(
                         {
                             TechLogOneC::ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event.Minute(), event.Second(), event.Msecond()),
                             event.Duration(),
-                            dbpid,
-                            rows,
-                            rows_affected,
+                            TechLogOneC::GetDbPid(event.GetDbPid()),
+                            TechLogOneC::RowsToUint64(event.GetRow()),
+                            TechLogOneC::RowsToUint64(event.GetRowsAffected()),
                             plan_txt.rows_,
                             plan_txt.estimate_rows_,
                             plan_txt.data_size_,
@@ -359,7 +354,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                             *event.GetComputer(),
                             *event.GetSession(),
                             *event.GetUsr(),
-                            std::move(last_string_context),
+                            TechLogOneC::LastStringContext(event.GetContext()),
                             *event.GetContext(),
                             *sql_text,
                             std::move(sql_text_hash),
@@ -422,6 +417,23 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                         *event.GetRegions()
                     );
                 }
+                else if (event.Name() == "EXCP" && *event.GetException() == "DataBaseException" && event.GetDescr()->find("Microsoft SQL Server") != std::string::npos) {
+                    accumulator_ms_sql_excp.Add(
+                        {
+                            TechLogOneC::ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event.Minute(), event.Second(), event.Msecond()),
+                            *event.GetComputer(),
+                            *event.GetSession(),
+                            *event.GetUsr(),
+                            *event.GetDatabase(),
+                            TechLogOneC::GetDbPid(event.GetDbPid()),
+                            TechLogOneC::LastStringContext(event.GetContext()),
+                            *event.GetContext(),
+                            *event.GetDescr(),
+                            TechLogOneC::MsSqlExcpEvent::TypeFromDescr(event.GetDescr())
+                        }
+                    );
+
+                }
             }
             dw.ClearEvents();
 
@@ -476,6 +488,11 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                 if (!accumulator_long_request.Empty()) {
                     j_object.emplace("long_request", accumulator_long_request.ToJsonObject());
                     accumulator_long_request.Clear();
+                }
+
+                if (!accumulator_ms_sql_excp.Empty()) {
+                    j_object.emplace("ms_sql_excp", accumulator_ms_sql_excp.ToJsonObject());
+                    accumulator_ms_sql_excp.Clear();
                 }
 
                 std::thread thr_send(Send, &sender, std::move(settings.Target()), std::move(boost::json::serialize(j_object)));

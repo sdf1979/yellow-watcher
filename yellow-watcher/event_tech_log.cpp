@@ -123,4 +123,40 @@ namespace TechLogOneC {
 			sql_text_hash_, Soldy::GetSHA256(sql_text_hash_, ss), sql_plan_text_, sql_plan_tokens_ };
 	}
 	
+	boost::json::array MsSqlExcpEvent::Columns() {
+		return { "date", "microseconds", "computer", "session", "user", "data_base", "dbpid",
+			"last_string_context", "hash_last_string_context", "context", "hash_context",
+			"descr", "type"};
+	}
+
+	boost::json::array MsSqlExcpEvent::ToJsonArray(stringstream& ss) {
+		return { ToDateFormatString(time_, ss), Microseconds(time_), computer_, session_id_, user_, data_base_, dbpid_,
+			last_string_context_, Soldy::GetSHA256(last_string_context_, ss), context_, Soldy::GetSHA256(context_, ss),
+			descr_, type_};
+	}
+
+	string MsSqlExcpEvent::TypeFromDescr(const std::string* descr) {
+		if (descr->find(u8"Lock request time out period exceeded") != string::npos) return u8"Таймаут ожидания блокировки";
+		if (descr->find(u8"Превышено время ожидания запроса на блокировку") != string::npos) return u8"Таймаут ожидания блокировки";
+		if (descr->find(u8"the session is in the kill state") != string::npos) return u8"Принудительное завершение сеанса";
+		if (descr->find(u8"The semaphore timeout period has expired") != string::npos) return u8"Ошибка TCP";
+		if (descr->find(u8"Превышен таймаут семафора") != string::npos) return u8"Ошибка TCP";
+		if (descr->find(u8"An existing connection was forcibly closed by the remote host") != string::npos) return u8"Удаленный хост закрыл соединение";
+		if (descr->find(u8"Удаленный хост принудительно разорвал существующее подключение") != string::npos) return u8"Удаленный хост закрыл соединение";
+		if (descr->find(u8"Ошибка связи") != string::npos) return u8"Удаленный хост закрыл соединение";
+		if (descr->find(u8"Не удается завершить вход в систему") != string::npos) return u8"Удаленный хост закрыл соединение";
+		if (descr->find(u8"deadlocked on lock resources with another process") != string::npos) return u8"Взаимоблокировка";
+		if (descr->find(u8"Unable to access availability database") != string::npos) return u8"Ошибка доступа к реплике";
+		if (descr->find(u8"Не найдена база данных") != string::npos) return u8"Не найдена база";
+		if (descr->find(u8"Cannot open database") != string::npos && descr->find("The login failed") != string::npos) return u8"Ошибка аутентификации";
+		if (descr->find(u8"Поставщик именованных каналов") != string::npos) return u8"Ошибка именованных каналов";
+		if (descr->find(u8"Cannot insert duplicate key") != string::npos) return u8"Нарушено условие уникальности данных";
+		if (descr->find(u8"The specified network name is no longer available") != string::npos) return u8"Ошибка TCP";
+		if (descr->find(u8"Указанное сетевое имя более недоступно") != string::npos) return u8"Ошибка TCP";
+		if (descr->find(u8"A connection attempt failed") != string::npos) return u8"Ошибка TCP";
+		if (descr->find(u8"Попытка установить соединение была безуспешной") != string::npos) return u8"Ошибка TCP";
+		if (descr->find(u8"Timeout error") != string::npos) return u8"Ошибка TCP";
+		if (descr->find(u8"User does not have permission to use the KILL statement") != string::npos) return u8"Нет разрешения KILL";
+		return u8"Прочее";
+	}
 }

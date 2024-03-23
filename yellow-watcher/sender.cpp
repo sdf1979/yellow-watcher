@@ -47,7 +47,7 @@ void Sender::Send(const string& target, const string& data) {
     ioc.run();
 }
 
-Session::Session(net::io_context& ioc, const string& host, const string& port, const string& password, const string& login) :
+Session::Session(net::io_context& ioc, const string& host, const string& port, const string& login, const string& password) :
     resolver_(net::make_strand(ioc)),
     stream_(net::make_strand(ioc)),
     host_(host),

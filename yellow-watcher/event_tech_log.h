@@ -5,7 +5,7 @@
 #include <vector>
 #include "boost/json.hpp"
 #include "time.h"
-//#include "functions.h"
+#include "encoding_string.h"
 #include "SqlTextHash.h"
 
 using sql_plan_token = std::tuple<std::uint64_t, std::uint64_t, double, double, double, std::uint64_t, double, double, std::string>;
@@ -74,5 +74,21 @@ namespace TechLogOneC {
 		std::vector<sql_plan_token> sql_plan_tokens_;
 		static boost::json::array Columns();
 		boost::json::array ToJsonArray(std::stringstream& ss);
+	};
+
+	struct MsSqlExcpEvent {
+		std::uint64_t time_ = 0;
+		std::string computer_;
+		std::string session_id_;
+		std::string user_;
+		std::string data_base_;
+		std::uint64_t dbpid_ = 0;
+		std::string last_string_context_;
+		std::string context_;
+		std::string descr_;
+		std::string type_;
+		static boost::json::array Columns();
+		boost::json::array ToJsonArray(std::stringstream& ss);
+		static std::string TypeFromDescr(const std::string* descr);
 	};
 }
