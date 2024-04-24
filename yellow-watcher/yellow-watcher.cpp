@@ -42,7 +42,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParam);
 
 wchar_t SERVICE_NAME[100] = L"Yellow Watcher Service";
 const std::wstring* LOGS_PATH;
-static const std::wstring VERSION = L"1.56";
+static const std::wstring VERSION = L"1.57";
 static const std::string VERSION_STR = WideCharToUtf8(VERSION);
 
 void GetPath();

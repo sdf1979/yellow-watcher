@@ -104,6 +104,7 @@ namespace Soldy {
 			}
 			sql_hash.push_back(*it);
 		}
+		ReplaceColumnName(&sql_hash);
 		return sql_hash;
 	}
 
@@ -190,6 +191,36 @@ namespace Soldy {
 			if (pos != string_view::npos) {
 				sv.remove_prefix(pos + 1);
 				sql_hash.append("CREATECLUSTEREDINDEXidx");
+			}
+		}
+	}
+
+	void ReplaceColumnName(string* str) {
+		size_t posQ = 0;
+		size_t posF;
+		for (;;) {
+			posQ = str->find("._Q_", posQ);
+			if (posQ != string::npos) {
+				posQ += 4;
+				posF = str->find("_F_", posQ);
+				if (posF != string::npos) {
+					if (posF - posQ == 3) {
+						if (
+							(*str)[posQ + 2] > '0' && (*str)[posQ + 2] <= '9'
+							&& (*str)[posQ + 1] >= '0' && (*str)[posQ + 1] <= '9'
+							&& (*str)[posQ] >= '0' && (*str)[posQ] <= '9'
+							) {
+							memset(str->data() + posQ, '0', 3);
+						}
+					}
+					posQ = posF + 3;
+				}
+				else {
+					break;
+				}
+			}
+			else {
+				break;
 			}
 		}
 	}
