@@ -1,11 +1,11 @@
-﻿// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
-
-#include "SqlTextHash.h"
+﻿#include "SqlTextHash.h"
 
 using namespace std;
 
 namespace Soldy {
+
+	const string FIND_Q = "_Q_";
+	const string FIND_F = "_F_";
 
 	string SqlHashDbMsSql(const string* str) {
 		string_view sv(*str);
@@ -115,7 +115,7 @@ namespace Soldy {
 				if (sv[index] == '(') {
 					++stack;
 				}
-				else if (sv[index] == ')') {
+				else if(sv[index] == ')') {
 					--stack;
 				}
 				if (!stack) {
@@ -199,10 +199,10 @@ namespace Soldy {
 		size_t posQ = 0;
 		size_t posF;
 		for (;;) {
-			posQ = str->find("._Q_", posQ);
+			posQ = str->find(FIND_Q, posQ);
 			if (posQ != string::npos) {
-				posQ += 4;
-				posF = str->find("_F_", posQ);
+				posQ += FIND_Q.length();
+				posF = str->find(FIND_F, posQ);
 				if (posF != string::npos) {
 					if (posF - posQ == 3) {
 						if (
@@ -213,7 +213,7 @@ namespace Soldy {
 							memset(str->data() + posQ, '0', 3);
 						}
 					}
-					posQ = posF + 3;
+					posQ = posF + FIND_F.length();
 				}
 				else {
 					break;
