@@ -6,3 +6,4 @@
 x64/Release/settings.json
 *.vcxproj
 *.plog
+x64/Release/_settings.json

@@ -171,7 +171,7 @@ void EventData::EndValue() {
         key_index_[15] = values_.size();
     }
 
-    if (value_temp_.back() == '\r') {
+    if (!value_temp_.empty() && value_temp_.back() == '\r') {
         value_temp_.pop_back();
     }
     values_.emplace_back(move(key_temp_), move(value_temp_));

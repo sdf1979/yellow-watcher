@@ -9,6 +9,7 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/beast/core/detail/base64.hpp>
+#include <unordered_map>
 #include "logger.h"
 
 namespace beast = boost::beast;
@@ -26,4 +27,6 @@ class Sender {
 public:
     Sender(const std::string& host, const std::string& port, const std::string& login, const std::string& password);
     void Send(const std::string& target, const std::string& data);
+    void Send(const std::string& target, const std::unordered_map<std::string, std::string>& header, const std::string& data);
+    static std::string ToBase64(const std::string& str);
 };

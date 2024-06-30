@@ -42,13 +42,16 @@ DWORD WINAPI WorkerThread(LPVOID lpParam);
 
 wchar_t SERVICE_NAME[100] = L"Yellow Watcher Service";
 const std::wstring* LOGS_PATH;
-static const std::wstring VERSION = L"1.58";
+static const std::wstring VERSION = L"1.59";
 static const std::string VERSION_STR = WideCharToUtf8(VERSION);
 
 void GetPath();
+Settings InitSettings();
 void SetLoggerLevel(Logger* logger, const std::wstring& level);
 void RunConsole();
 void RunAnalysis();
+void LoadStressTest(std::string name_test);
+TechLogOneC::LongRequestEvent CreateFromEvent(const tm& time, const EventData& event);
 BOOL WINAPI HandlerRoutine(DWORD dwCtrlType);
 int InstallService(LPCWSTR serviceName, LPCWSTR servicePath);
 int RemoveService(LPCWSTR serviceName);
@@ -95,6 +98,11 @@ int wmain(int argc, wchar_t** argv) {
         RunAnalysis();
         return 0;
     }
+    else if (mode == L"stress_test") {
+        LOGGER->SetOutConsole(true);
+        LoadStressTest(WideCharToUtf8(program_options.NameTest()));
+        return 0;
+    }
     else if (mode == L"install") {
         LOGGER->SetOutConsole(true);
         int result = InstallService(SERVICE_NAME, std::wstring(L"\"").append(FILE_PATH.wstring()).append(L"\" -M service").c_str());
@@ -113,6 +121,10 @@ int wmain(int argc, wchar_t** argv) {
         LOGGER->Print(msg, true);
     }
     else {
+        LOGGER->SetOutConsole(true);
+        std::wstring msg = L"Unknown startup mode '";
+        msg.append(mode).append(L"'.");
+        LOGGER->Print(msg, true);
         return 0;
     }
 
@@ -139,6 +151,23 @@ int wmain(int argc, wchar_t** argv) {
     LOGGER->Print(msg, true);
 
     return 0;
+}
+
+void Send(Sender* sender, const std::string& target, const std::unordered_map<std::string, std::string>& header,  const std::string& data) {
+    std::chrono::time_point<std::chrono::high_resolution_clock> start_send = std::chrono::high_resolution_clock::now();
+    sender->Send(target, header, data);
+
+    if (LOGGER->IsTrace()) {
+        auto duration_send = std::chrono::high_resolution_clock::now() - start_send;
+        std::string msg = "Send: ";
+        msg.append(std::to_string(duration_send.count())).append(" ns");
+        LOGGER->Print(msg, Logger::Type::Trace);
+    }
+}
+
+void Send(Sender* sender, const std::string& target, const std::string& data) {
+    std::unordered_map<std::string, std::string> header;
+    sender->Send(target, header, data);
 }
 
 void RunConsole() {
@@ -256,15 +285,70 @@ void RunAnalysis() {
     std::wcout << Utf8ToWideChar(boost::json::serialize(j_object)) << '\n';
 }
 
-void Send(Sender* sender, const std::string& target, const std::string& data) {
-    std::chrono::time_point<std::chrono::high_resolution_clock> start_send = std::chrono::high_resolution_clock::now();
-    sender->Send(target, data);
+std::string StressTestToJson(std::string name_test, TechLogOneC::EventAccumulator<TechLogOneC::LongRequestEvent>* dbmssql_event) {
+    boost::json::object j_object;
+    j_object.emplace("host", HOST);
+    j_object.emplace("version", VERSION_STR);
+    j_object.emplace("type", "stress_test");
+    j_object.emplace("name_test", name_test);
+    if (!dbmssql_event->Empty()) {
+        j_object.emplace("dbmssql", dbmssql_event->ToJsonObject());
+    }
+    return boost::json::serialize(j_object);
+}
 
-    if (LOGGER->IsTrace()) {
-        auto duration_send = std::chrono::high_resolution_clock::now() - start_send;
-        std::string msg = "Send: ";
-        msg.append(std::to_string(duration_send.count())).append(" ns");
-        LOGGER->Print(msg, Logger::Type::Trace);
+void LoadStressTest(std::string name_test) {
+    
+    using namespace TechLogOneC;
+    
+    std::unordered_map<std::string, std::string> header;
+    header.insert({ "Package-Name", Sender::ToBase64(name_test) });
+
+    EventAccumulator<LongRequestEvent> dbmssql_event;
+    
+    Settings settings = InitSettings();
+    Sender sender(settings.Server(), settings.Port(), settings.User(), settings.Password());
+    DirectoryWatcher dw(Utf8ToWideChar(settings.TechLogsPath()));
+        
+    dw.ReadDirectory(true, false);
+    if (dw.OpenCursor()) {
+        int rows = 0;
+        int max_rows = 1000;
+        while (dw.ReadNext()) {
+            for (auto it = dw.GetEvents().begin(); it != dw.GetEvents().end(); ++it) {
+                const tm& time = it->first;
+                const EventData& event = it->second;
+                if (event.Name() == "DBMSSQL") {
+                    dbmssql_event.Add(CreateFromEvent(time, event));
+                    ++rows;
+                }
+                else if (event.Name() == "TTIMEOUT") {
+                }
+                else if (event.Name() == "TDEADLOCK") {
+                }
+                else if (event.Name() == "TLOCK") {
+                }
+                if (rows == max_rows) {
+                    std::string data = StressTestToJson(name_test, &dbmssql_event);
+                    Send(&sender, settings.Target(), header, data);
+                    dbmssql_event.Clear();
+                    std::string msg = "sent data with ";
+                    msg.append(std::to_string(rows)).append(" events");
+                    LOGGER->Print(msg, true);
+                    rows = 0;
+                }
+            }
+            dw.ClearEvents();
+        }
+        if (rows != 0) {
+            std::string data = StressTestToJson(name_test, &dbmssql_event);
+            Send(&sender, settings.Target(), header, data);
+            dbmssql_event.Clear();
+            std::string msg = "sent data with ";
+            msg.append(std::to_string(rows)).append(" events");
+            LOGGER->Print(msg, true);
+        }
+        dw.CloseCursor();
     }
 }
 
@@ -310,9 +394,8 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
 
         std::chrono::time_point<std::chrono::high_resolution_clock> start_read;
         DWORD res;
-        const std::string* sql_text = nullptr;
-        std::string sql_text_hash;
         std::uint64_t duration_long_request = settings.DurationLongRequest();
+
         for (;;) {
             res = WaitForSingleObject(g_ServiceStopEvent, 0);
             if (g_ServiceStopEvent == INVALID_HANDLE_VALUE || res != WAIT_TIMEOUT) {
@@ -330,39 +413,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                     if (cur_event_time > max_event_time) max_event_time = cur_event_time;
                 }
                 if (event.Name() == "DBMSSQL" && event.Duration() >= duration_long_request) {
-                    TechLogOneC::PlanTxt plan_txt = TechLogOneC::PlanTxt::Parse(*event.GetplanSQLText());
-                    sql_text = event.GetSql();
-                    if (!sql_text->empty()) {
-                        sql_text_hash = Soldy::SqlHashDbMsSql(sql_text);
-                    }
-                    else {
-                        sql_text = event.GetFunc();
-                        sql_text_hash = *sql_text;
-                    }
-                    accumulator_long_request.Add(
-                        {
-                            TechLogOneC::ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event.Minute(), event.Second(), event.Msecond()),
-                            event.Duration(),
-                            TechLogOneC::GetDbPid(event.GetDbPid()),
-                            TechLogOneC::RowsToUint64(event.GetRow()),
-                            TechLogOneC::RowsToUint64(event.GetRowsAffected()),
-                            plan_txt.rows_,
-                            plan_txt.estimate_rows_,
-                            plan_txt.data_size_,
-                            plan_txt.estimate_data_size_,
-                            *event.GetDatabase(),
-                            *event.GetComputer(),
-                            *event.GetSession(),
-                            *event.GetUsr(),
-                            TechLogOneC::LastStringContext(event.GetContext()),
-                            *event.GetContext(),
-                            *sql_text,
-                            std::move(sql_text_hash),
-                            *event.GetplanSQLText(),
-                            std::move(plan_txt.GetSqlPlanTokens())
-                        }
-                    );
-
+                    accumulator_long_request.Add(CreateFromEvent(time, event));
                 }
                 else if (event.Name() == "TTIMEOUT") {
                     TechLogOneC::ManagedLockEvent managed_lock_event(
@@ -494,8 +545,9 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
                     j_object.emplace("ms_sql_excp", accumulator_ms_sql_excp.ToJsonObject());
                     accumulator_ms_sql_excp.Clear();
                 }
-
-                std::thread thr_send(Send, &sender, std::move(settings.Target()), std::move(boost::json::serialize(j_object)));
+                //Т.к. есть перегруженная функция Send, то нужно явно указать какую мы используем
+                std::thread thr_send(static_cast<void(*)(Sender*, const std::string&, const std::string&)>(Send),
+                    &sender, settings.Target(), boost::json::serialize(j_object));
                 thr_send.detach();
                 
                 LOGGER->NewFileWithLock();
@@ -522,6 +574,20 @@ void GetPath() {
 
     FILE_PATH = std::filesystem::path(path);
     PROGRAM_PATH = FILE_PATH.parent_path();
+}
+
+Settings InitSettings() {
+    Settings settings;
+    if (!settings.Read(PROGRAM_PATH)) {
+        std::wstring msg = L"Can't read \'";
+        msg.append(PROGRAM_PATH).append(L"\\settings.json file.");
+        LOGGER->Print(msg, Logger::Type::Error);
+        ExitProcess(1);
+    }
+    if (!LOGS_PATH->empty()) {
+        settings.SetTechLogsPath(WideCharToUtf8(*LOGS_PATH));
+    }
+    return settings;
 }
 
 void SetLoggerLevel(Logger* logger, const std::wstring& level) {
@@ -729,5 +795,40 @@ VOID WINAPI ServiceCtrlHandler(DWORD CtrlCode) {
     default:
         break;
     }
+}
+
+TechLogOneC::LongRequestEvent CreateFromEvent(const tm& time, const EventData& event) {
+    const std::string* sql_text = nullptr;
+    std::string sql_text_hash;
+    TechLogOneC::PlanTxt plan_txt = TechLogOneC::PlanTxt::Parse(*event.GetplanSQLText());
+    sql_text = event.GetSql();
+    if (!sql_text->empty()) {
+        sql_text_hash = Soldy::SqlHashDbMsSql(sql_text);
+    }
+    else {
+        sql_text = event.GetFunc();
+        sql_text_hash = *sql_text;
+    }
+    return {
+        TechLogOneC::ToUint64(time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, event.Minute(), event.Second(), event.Msecond()),
+        event.Duration(),
+        TechLogOneC::GetDbPid(event.GetDbPid()),
+        TechLogOneC::RowsToUint64(event.GetRow()),
+        TechLogOneC::RowsToUint64(event.GetRowsAffected()),
+        plan_txt.rows_,
+        plan_txt.estimate_rows_,
+        plan_txt.data_size_,
+        plan_txt.estimate_data_size_,
+        *event.GetDatabase(),
+        *event.GetComputer(),
+        *event.GetSession(),
+        *event.GetUsr(),
+        TechLogOneC::LastStringContext(event.GetContext()),
+        *event.GetContext(),
+        *sql_text,
+        std::move(sql_text_hash),
+        *event.GetplanSQLText(),
+        std::move(plan_txt.GetSqlPlanTokens())
+    };
 }
 

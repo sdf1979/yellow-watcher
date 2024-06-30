@@ -27,6 +27,7 @@ class Session : public enable_shared_from_this<Session> {
 public:
     explicit Session(net::io_context& ioc, const string& host, const string& port, const string& password, const string& login);
     void Run(char const* target, const string& data);
+    void Run(char const* target, const unordered_map<string, string>& header, const string& data);
     void OnResolve(const beast::error_code& ec, tcp::resolver::results_type results);
     void OnConnect(const beast::error_code& ec, tcp::resolver::results_type::endpoint_type);
     void OnWrite(const beast::error_code& ec, std::size_t bytes_transferred);
@@ -41,9 +42,14 @@ Sender::Sender(const string& host, const string& port, const string& login, cons
 {}
 
 void Sender::Send(const string& target, const string& data) {
+    unordered_map<string, string> header;
+    Send(target, header, data);
+}
+
+void Sender::Send(const string& target, const unordered_map<string, string>& header, const string& data) {
     net::io_context ioc;
     shared_ptr<Session> session = make_shared<Session>(ioc, host_, port_, login_, password_);
-    session->Run(target.c_str(), data);
+    session->Run(target.c_str(), header, data);
     ioc.run();
 }
 
@@ -57,9 +63,22 @@ Session::Session(net::io_context& ioc, const string& host, const string& port, c
 {}
 
 void Session::Run(char const* target, const string& data) {
+    unordered_map<string, string> header;
+    Run(target, header, data);
+}
+
+string Sender::ToBase64(const string& str) {
+    string str_base64;
+    str_base64.resize(base64::encoded_size(str.size()));
+    base64::encode(static_cast<void*>(&str_base64[0]), str.c_str(), str.size());
+
+    return str_base64;
+}
+
+void Session::Run(char const* target, const unordered_map<string, string>& header, const string& data) {
     string auth = login_;
     auth.append(":")
-    .append(password_);
+        .append(password_);
 
     string auth_base64;
     auth_base64.resize(base64::encoded_size(auth.size()));
@@ -72,6 +91,9 @@ void Session::Run(char const* target, const string& data) {
     req_.set(http::field::host, host_);
     req_.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
     req_.set(http::field::authorization, auth_base64);
+    for (auto it = header.begin(); it != header.end(); ++it) {
+        req_.set(it->first, it->second);
+    }
     req_.body() = data;
     req_.prepare_payload();
 
